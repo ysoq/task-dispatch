@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket + 本地缓存示例</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #messages {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebSocket + 本地缓存示例</h1>
+
+  <div class="container">
+    <h2>WebSocket连接状态</h2>
+    <div id="connectionStatus">未连接</div>
+  </div>
+
+  <div class="container">
+    <h2>本地缓存操作</h2>
+
+    <div class="form-group">
+      <label for="cacheKey">缓存键:</label>
+      <input type="text" id="cacheKey" placeholder="输入缓存键">
+    </div>
+
+    <div class="form-group">
+      <label for="cacheValue">缓存值:</label>
+      <textarea id="cacheValue" rows="3" placeholder="输入缓存值"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="cacheTtl">过期时间(秒，可选):</label>
+      <input type="number" id="cacheTtl" placeholder="输入过期时间(秒)" value="3600">
+    </div>
+
+    <button id="setCacheBtn">设置缓存</button>
+    <button id="getCacheBtn">获取缓存</button>
+    <button id="deleteCacheBtn">删除缓存</button>
+    <button id="clearCacheBtn">清空缓存</button>
+  </div>
+
+  <div class="container">
+    <h2>消息日志</h2>
+    <div id="messages"></div>
+  </div>
+
+  <script>
+    // WebSocket连接
+    let socket;
+    const messagesDiv = document.getElementById('messages');
+    const connectionStatus = document.getElementById('connectionStatus');
+
+    // 连接WebSocket服务器
+    function connectWebSocket() {
+      // 关闭任何现有的连接
+      if (socket) {
+        socket.close();
+      }
+
+      // 创建新连接
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+      const wsUrl = wsProtocol + window.location.host;
+      socket = new WebSocket(wsUrl);
+
+      // 连接打开时
+      socket.onopen = () => {
+        connectionStatus.textContent = '已连接';
+        connectionStatus.style.color = 'green';
+        addMessage('WebSocket连接已建立');
+      };
+
+      // 接收消息时
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleMessage(data);
+        } catch (error) {
+          addMessage('接收到无效消息: ' + event.data, 'error');
+        }
+      };
+
+      // 连接关闭时
+      socket.onclose = () => {
+        connectionStatus.textContent = '已断开';
+        connectionStatus.style.color = 'red';
+        addMessage('WebSocket连接已关闭');
+
+        // 尝试重连
+        setTimeout(connectWebSocket, 3000);
+      };
+
+      // 连接出错时
+      socket.onerror = (error) => {
+        addMessage('WebSocket错误: ' + error, 'error');
+      };
+    }
+
+    // 处理接收到的消息
+    function handleMessage(data) {
+      switch (data.type) {
+        case 'welcome':
+          addMessage('服务器: ' + data.message, 'success');
+          break;
+        case 'cache_set_success':
+          addMessage(`缓存设置成功: ${data.key}`, 'success');
+          break;
+        case 'cache_get_response':
+          if (data.value !== undefined) {
+            addMessage(`缓存获取成功: ${data.key} = ${JSON.stringify(data.value)}`, 'success');
+            document.getElementById('cacheValue').value = JSON.stringify(data.value);
+          } else {
+            addMessage(`缓存获取失败: ${data.key} 不存在`, 'error');
+          }
+          break;
+        case 'cache_delete_response':
+          if (data.success) {
+            addMessage(`缓存删除成功: ${data.key}`, 'success');
+          } else {
+            addMessage(`缓存删除失败: ${data.key} 不存在`, 'error');
+          }
+          break;
+        case 'cache_clear_success':
+          addMessage('缓存已清空', 'success');
+          break;
+        case 'error':
+          addMessage('错误: ' + data.message, 'error');
+          break;
+        default:
+          addMessage('未知消息类型: ' + JSON.stringify(data));
+      }
+    }
+
+    // 添加消息到日志
+    function addMessage(text, type = '') {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message' + (type ? ' ' + type : '');
+      messageDiv.textContent = new Date().toLocaleTimeString() + ': ' + text;
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // 发送消息到服务器
+    function sendMessage(message) {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(message));
+      } else {
+        addMessage('WebSocket未连接，无法发送消息', 'error');
+      }
+    }
+
+    // 事件监听器
+    document.getElementById('setCacheBtn').addEventListener('click', () => {
+      const key = document.getElementById('cacheKey').value;
+      const value = document.getElementById('cacheValue').value;
+      const ttl = parseInt(document.getElementById('cacheTtl').value) || 3600;
+
+      if (!key) {
+        addMessage('请输入缓存键', 'error');
+        return;
+      }
+
+      try {
+        // 尝试解析值为JSON，如果失败则作为字符串处理
+        const parsedValue = JSON.parse(value);
+        sendMessage({
+          type: 'cache_set',
+          key: key,
+          value: parsedValue,
+          ttl: ttl
+        });
+      } catch (error) {
+        sendMessage({
+          type: 'cache_set',
+          key: key,
+          value: value,
+          ttl: ttl
+        });
+      }
+    });
+
+    document.getElementById('getCacheBtn').addEventListener('click', () => {
+      const key = document.getElementById('cacheKey').value;
+
+      if (!key) {
+        addMessage('请输入缓存键', 'error');
+        return;
+      }
+
+      sendMessage({
+        type: 'cache_get',
+        key: key
+      });
+    });
+
+    document.getElementById('deleteCacheBtn').addEventListener('click', () => {
+      const key = document.getElementById('cacheKey').value;
+
+      if (!key) {
+        addMessage('请输入缓存键', 'error');
+        return;
+      }
+
+      sendMessage({
+        type: 'cache_delete',
+        key: key
+      });
+    });
+
+    document.getElementById('clearCacheBtn').addEventListener('click', () => {
+      sendMessage({
+        type: 'cache_clear'
+      });
+    });
+
+    // 初始连接
+    connectWebSocket();
+  </script>
+</body>
+</html>
