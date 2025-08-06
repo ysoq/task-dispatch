@@ -97,6 +97,51 @@
   </div>
 
   <div class="container">
+    <h2>任务调度</h2>
+
+    <div class="form-group">
+      <label for="taskData">任务数据:</label>
+      <textarea id="taskData" rows="3" placeholder="输入任务数据(JSON格式)">{
+  "action": "process",
+  "data": "示例任务数据"
+}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="taskPriority">任务优先级:</label>
+      <select id="taskPriority">
+        <option value="high">高</option>
+        <option value="medium" selected>中</option>
+        <option value="low">低</option>
+      </select>
+    </div>
+
+    <button id="submitTaskBtn">提交任务</button>
+  </div>
+
+  <div class="container">
+    <h2>任务状态查询</h2>
+
+    <div class="form-group">
+      <label for="taskId">任务ID:</label>
+      <input type="text" id="taskId" placeholder="输入任务ID">
+    </div>
+
+    <button id="queryTaskStatusBtn">查询状态</button>
+    <button id="getTaskResultBtn">获取结果</button>
+
+    <div class="form-group" style="margin-top: 15px;">
+      <label>任务状态:</label>
+      <div id="taskStatus"></div>
+    </div>
+
+    <div class="form-group">
+      <label>任务结果:</label>
+      <pre id="taskResult"></pre>
+    </div>
+  </div>
+
+  <div class="container">
     <h2>消息日志</h2>
     <div id="messages"></div>
   </div>
@@ -204,6 +249,86 @@
         addMessage('WebSocket未连接，无法发送消息', 'error');
       }
     }
+
+    // 提交任务
+    document.getElementById('submitTaskBtn').addEventListener('click', () => {
+      try {
+        const taskData = JSON.parse(document.getElementById('taskData').value);
+        const priority = document.getElementById('taskPriority').value;
+
+        // 使用HTTP API提交任务
+        fetch('/api/task/submit?priority=' + priority, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(taskData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.taskId) {
+            addMessage(`任务提交成功，任务ID: ${data.taskId}`, 'success');
+            document.getElementById('taskId').value = data.taskId;
+          } else {
+            addMessage(`任务提交失败: ${data.message}`, 'error');
+          }
+        })
+        .catch(error => {
+          addMessage(`任务提交错误: ${error.message}`, 'error');
+        });
+      } catch (error) {
+        addMessage(`任务数据格式错误: ${error.message}`, 'error');
+      }
+    });
+
+    // 查询任务状态
+    document.getElementById('queryTaskStatusBtn').addEventListener('click', () => {
+      const taskId = document.getElementById('taskId').value;
+      if (!taskId) {
+        addMessage('请输入任务ID', 'error');
+        return;
+      }
+
+      fetch(`/api/task/status/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.taskId) {
+            addMessage(`任务状态查询成功: ${data.status}`, 'success');
+            document.getElementById('taskStatus').textContent = 
+              `ID: ${data.taskId}, 状态: ${data.status}, 创建时间: ${new Date(data.createdAt).toLocaleString()}, 更新时间: ${new Date(data.updatedAt).toLocaleString()}`;
+          } else {
+            addMessage(`任务状态查询失败: ${data.message}`, 'error');
+            document.getElementById('taskStatus').textContent = '';
+          }
+        })
+        .catch(error => {
+          addMessage(`任务状态查询错误: ${error.message}`, 'error');
+        });
+    });
+
+    // 获取任务结果
+    document.getElementById('getTaskResultBtn').addEventListener('click', () => {
+      const taskId = document.getElementById('taskId').value;
+      if (!taskId) {
+        addMessage('请输入任务ID', 'error');
+        return;
+      }
+
+      fetch(`/api/task/result/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.result !== undefined) {
+            addMessage('任务结果获取成功', 'success');
+            document.getElementById('taskResult').textContent = JSON.stringify(data.result, null, 2);
+          } else {
+            addMessage(`任务结果获取失败: ${data.message}`, 'error');
+            document.getElementById('taskResult').textContent = '';
+          }
+        })
+        .catch(error => {
+          addMessage(`任务结果获取错误: ${error.message}`, 'error');
+        });
+    });
 
     // 事件监听器
     document.getElementById('setCacheBtn').addEventListener('click', () => {

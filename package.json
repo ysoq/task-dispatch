@@ -2,9 +2,10 @@
   "name": "13.task-dispatch",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -20,6 +21,7 @@
   "dependencies": {
     "express": "^5.1.0",
     "node-cache": "^5.1.2",
+    "uuid": "^11.1.0",
     "ws": "^8.18.3"
   }
 }

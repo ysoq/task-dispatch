@@ -1,4 +1,4 @@
-### 调度服务器模块设计
+### WebSocket + 本地缓存任务调度系统
 
 ---
 
@@ -13,7 +13,7 @@
   - 每30秒响应端需发送心跳包 `{"type":"heartbeat"}`
   - 超时检测：连续60秒无心跳则标记为离线
 - 状态存储
-  - 在线状态：Redis Hash `terminals:online` 存储 `terminalId -> lastActiveTime`
+  - 在线状态：本地缓存 Map `terminals:online` 存储 `terminalId -> lastActiveTime`
   - 连接池：内存映射 `ConcurrentHashMap<terminalId, WebSocketSession>`
 
 **异常处理**：
@@ -41,7 +41,7 @@ graph TD
 
 **关键设计**：
 - 任务ID生成：UUIDv4 + 时间戳前缀
-- 状态持久化：Redis Sorted Set 按创建时间排序
+- 状态持久化：本地文件系统按创建时间排序
 - 超时控制：后台线程监控处理中任务（默认300秒超时）
 - 优先级队列：高优先级任务插队机制
 
@@ -68,25 +68,30 @@ graph TD
 
 #### **4. 缓存管理模块**
 **数据结构设计**：
-```redis
-# 在线终端
-HSET terminals:online terminal001 1688888888
+```javascript
+// 在线终端
+const onlineTerminals = new Map();
+onlineTerminals.set('terminal001', 1688888888);
 
-# 任务元数据
-HSET task:meta:T001_xxx 
-  "created"=>"20230805T120000", 
-  "status"=>"PROCESSING"
+// 任务元数据
+const taskMetadata = new Map();
+taskMetadata.set('task:meta:T001_xxx', {
+  created: '20230805T120000',
+  status: 'PROCESSING'
+});
 
-# 任务结果
-SET task:result:T001_xxx "{...}" EX 86400
+// 任务结果
+const taskResults = new NodeCache({ stdTTL: 86400 });
+taskResults.set('task:result:T001_xxx', {...});
 
-# 待处理队列
-LPUSH terminal001:pending_tasks T001_xxx
+// 待处理队列
+const pendingTasks = new Map();
+pendingTasks.set('terminal001', ['T001_xxx']);
 ```
 
 **缓存策略**：
 - 一级缓存：内存缓存活跃任务（LRU淘汰）
-- 二级缓存：Redis集群持久化
+- 持久化缓存：本地文件系统
 - 写穿透：任务状态变更同步更新数据库
 
 ---
@@ -111,15 +116,15 @@ graph LR
     A[网关层] --> B[调度节点1]
     A --> C[调度节点2]
     A --> D[调度节点3]
-    B & C & D --> E[Redis集群]
+    B & C & D --> E[本地缓存集群同步]
     E --> F[MySQL集群]
 ```
 
 **关键机制**：
 - 节点发现：Consul服务注册
 - 负载均衡：Round-Robin + 权重分配
-- 数据同步：Redis Pub/Sub 跨节点通知
-- 脑裂防护：Redis Redlock分布式锁
+- 数据同步：自定义事件系统跨节点通知
+- 脑裂防护：本地分布式锁实现
 
 ---
 
