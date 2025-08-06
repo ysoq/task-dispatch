@@ -123,6 +123,19 @@
     </div>
   </div>
 
+  <!-- 任务成功提示Toast -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="taskSuccessToast" class="toast fade" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header bg-success text-white">
+        <strong class="me-auto">任务成功</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        任务下发成功！
+      </div>
+    </div>
+  </div>
+
   <!-- 引入Bootstrap JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -423,12 +436,18 @@
         })
         .then(response => response.json())
         .then(data => {
-          if (data.taskId) {
-            addMessage(`任务提交成功，任务ID: ${data.taskId}`, 'success');
-          } else {
-            addMessage(`任务提交失败: ${data.message}`, 'error');
-          }
-        })
+            if (data.taskId) {
+              addMessage(`任务提交成功，任务ID: ${data.taskId}`, 'success');
+              // 显示任务成功Toast
+              const toastEl = document.getElementById('taskSuccessToast');
+              const toast = new bootstrap.Toast(toastEl);
+              // 更新Toast消息
+              toastEl.querySelector('.toast-body').textContent = `任务下发成功，任务ID: ${data.taskId}`;
+              toast.show();
+            } else {
+              addMessage(`任务提交失败: ${data.message}`, 'error');
+            }
+          })
         .catch(error => {
           addMessage(`任务提交错误: ${error.message}`, 'error');
         });
