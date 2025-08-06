@@ -3,48 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebSocket + 本地缓存示例</title>
+  <title>终端任务调度系统</title>
+  <!-- 引入Bootstrap CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 引入Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 800px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 20px;
     }
     .container {
-      border: 1px solid #ddd;
-      padding: 20px;
-      border-radius: 5px;
       margin-bottom: 20px;
     }
-    h1, h2 {
-      color: #333;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    input, textarea, button {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
     #messages {
-      height: 200px;
+      height: 300px;
       overflow-y: auto;
       border: 1px solid #ddd;
       padding: 10px;
@@ -62,90 +37,70 @@
     .success {
       color: green;
     }
+    .terminal-table th, .terminal-table td {
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
-  <h1>WebSocket + 本地缓存示例</h1>
+  <h1>终端任务调度系统</h1>
 
-  <div class="container">
-    <h2>WebSocket连接状态</h2>
-    <div id="connectionStatus">未连接</div>
+  <div class="container border rounded p-4 shadow-sm">
+    <h2 class="text-primary mb-3"><i class="fas fa-plug"></i> WebSocket连接状态</h2>
+    <div id="connectionStatus" class="fs-5 font-medium">未连接</div>
   </div>
 
-  <div class="container">
-    <h2>本地缓存操作</h2>
+  <div class="container border rounded p-4 shadow-sm">
+    <h2 class="text-primary mb-3"><i class="fas fa-tasks"></i> 任务下发</h2>
 
-    <div class="form-group">
-      <label for="cacheKey">缓存键:</label>
-      <input type="text" id="cacheKey" placeholder="输入缓存键">
+    <div class="mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="h6">终端列表</h3>
+        <button id="refreshTerminalsBtn" class="btn btn-secondary btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+      </div>
+
+      <div class="mb-3 p-3 bg-info bg-opacity-10 rounded border border-info">
+        <h4 class="h6 mb-2 text-info"><i class="fas fa-terminal"></i> 当前选择的终端</h4>
+        <div id="selectedTerminalInfo" class="font-medium">未选择终端</div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table table-striped terminal-table" id="terminalTable">
+          <thead>
+            <tr>
+              <th>选择</th>
+              <th>终端ID</th>
+              <th>类型</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody id="terminalTableBody">
+            <tr>
+              <td colspan="4" class="text-center">加载中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="cacheValue">缓存值:</label>
-      <textarea id="cacheValue" rows="3" placeholder="输入缓存值"></textarea>
+    <div class="mb-3">
+      <label for="actionInput" class="form-label">操作类型 (Action):</label>
+      <input type="text" id="actionInput" class="form-control" placeholder="输入操作类型" value="process">
+    </div>
+    <div class="mb-3">
+      <label for="dataInput" class="form-label">任务数据 (Data):</label>
+      <input type="text" id="dataInput" class="form-control" placeholder="输入任务数据" value="示例任务数据">
     </div>
 
-    <div class="form-group">
-      <label for="cacheTtl">过期时间(秒，可选):</label>
-      <input type="number" id="cacheTtl" placeholder="输入过期时间(秒)" value="3600">
-    </div>
-
-    <button id="setCacheBtn">设置缓存</button>
-    <button id="getCacheBtn">获取缓存</button>
-    <button id="deleteCacheBtn">删除缓存</button>
-    <button id="clearCacheBtn">清空缓存</button>
+    <button id="submitTaskBtn" class="btn btn-success w-100"><i class="fas fa-paper-plane"></i> 下发任务到指定终端</button>
   </div>
 
-  <div class="container">
-    <h2>任务调度</h2>
-
-    <div class="form-group">
-      <label for="taskData">任务数据:</label>
-      <textarea id="taskData" rows="3" placeholder="输入任务数据(JSON格式)">{
-  "action": "process",
-  "data": "示例任务数据"
-}</textarea>
-    </div>
-
-    <div class="form-group">
-      <label for="taskPriority">任务优先级:</label>
-      <select id="taskPriority">
-        <option value="high">高</option>
-        <option value="medium" selected>中</option>
-        <option value="low">低</option>
-      </select>
-    </div>
-
-    <button id="submitTaskBtn">提交任务</button>
+  <div class="container border rounded p-4 shadow-sm">
+    <h2 class="text-primary mb-3"><i class="fas fa-history"></i> 消息日志</h2>
+    <div id="messages" class="border rounded p-3 bg-light"></div>
   </div>
 
-  <div class="container">
-    <h2>任务状态查询</h2>
-
-    <div class="form-group">
-      <label for="taskId">任务ID:</label>
-      <input type="text" id="taskId" placeholder="输入任务ID">
-    </div>
-
-    <button id="queryTaskStatusBtn">查询状态</button>
-    <button id="getTaskResultBtn">获取结果</button>
-
-    <div class="form-group" style="margin-top: 15px;">
-      <label>任务状态:</label>
-      <div id="taskStatus"></div>
-    </div>
-
-    <div class="form-group">
-      <label>任务结果:</label>
-      <pre id="taskResult"></pre>
-    </div>
-  </div>
-
-  <div class="container">
-    <h2>消息日志</h2>
-    <div id="messages"></div>
-  </div>
-
+  <!-- 引入Bootstrap JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
   <script>
     // WebSocket连接
     let socket;
@@ -161,7 +116,7 @@
 
       // 创建新连接
       const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-      const wsUrl = wsProtocol + window.location.host;
+      const wsUrl = wsProtocol + window.location.host + '/ws';
       socket = new WebSocket(wsUrl);
 
       // 连接打开时
@@ -203,26 +158,8 @@
         case 'welcome':
           addMessage('服务器: ' + data.message, 'success');
           break;
-        case 'cache_set_success':
-          addMessage(`缓存设置成功: ${data.key}`, 'success');
-          break;
-        case 'cache_get_response':
-          if (data.value !== undefined) {
-            addMessage(`缓存获取成功: ${data.key} = ${JSON.stringify(data.value)}`, 'success');
-            document.getElementById('cacheValue').value = JSON.stringify(data.value);
-          } else {
-            addMessage(`缓存获取失败: ${data.key} 不存在`, 'error');
-          }
-          break;
-        case 'cache_delete_response':
-          if (data.success) {
-            addMessage(`缓存删除成功: ${data.key}`, 'success');
-          } else {
-            addMessage(`缓存删除失败: ${data.key} 不存在`, 'error');
-          }
-          break;
-        case 'cache_clear_success':
-          addMessage('缓存已清空', 'success');
+        case 'task_assigned':
+          addMessage(`任务已分配到终端 ${data.terminalId}: ${data.taskId}`, 'success');
           break;
         case 'error':
           addMessage('错误: ' + data.message, 'error');
@@ -250,14 +187,121 @@
       }
     }
 
-    // 提交任务
+    // 获取终端列表
+    function getTerminalList() {
+      fetch('/api/terminal/')
+        .then(response => response.json())
+        .then(terminals => {
+          const tableBody = document.getElementById('terminalTableBody');
+          tableBody.innerHTML = '';
+
+          if (terminals.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">无可用终端</td></tr>';
+            return;
+          }
+
+          terminals.forEach(terminal => {
+            const row = document.createElement('tr');
+            row.dataset.terminalId = terminal.id;
+            row.addEventListener('click', () => selectTerminalRow(row));
+
+            // 设置状态样式
+            let statusClass = '';
+            if (terminal.status === 'online') {
+              statusClass = 'text-success';
+            } else if (terminal.status === 'offline') {
+              statusClass = 'text-danger';
+            } else {
+              statusClass = 'text-warning';
+            }
+
+            row.innerHTML = `
+              <td><input type="radio" name="terminalSelect" value="${terminal.id}"></td>
+              <td>${terminal.id}</td>
+              <td>${terminal.type}</td>
+              <td class="${statusClass}">${terminal.status}</td>
+            `;
+
+            tableBody.appendChild(row);
+          });
+        })
+        .catch(error => {
+          addMessage('获取终端列表失败: ' + error.message, 'error');
+          document.getElementById('terminalTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-danger">获取失败</td></tr>';
+        });
+    }
+
+    // 选择终端行
+    function selectTerminalRow(selectedRow) {
+      // 移除其他行的选中状态
+      document.querySelectorAll('#terminalTableBody tr').forEach(row => {
+        row.classList.remove('table-primary');
+      });
+
+      // 添加当前行的选中状态
+      selectedRow.classList.add('table-primary');
+
+      // 选中对应的radio
+      const radio = selectedRow.querySelector('input[type="radio"]');
+      if (radio) {
+        radio.checked = true;
+        // 更新选中终端信息
+        updateSelectedTerminalInfo(radio.value);
+      }
+    }
+
+    // 更新选中终端信息
+    function updateSelectedTerminalInfo(terminalId) {
+      fetch(`/api/terminal/${terminalId}`)
+        .then(response => response.json())
+        .then(terminal => {
+          const infoDiv = document.getElementById('selectedTerminalInfo');
+          let statusClass = '';
+          if (terminal.status === 'online') {
+            statusClass = 'text-success';
+          } else if (terminal.status === 'offline') {
+            statusClass = 'text-danger';
+          } else {
+            statusClass = 'text-warning';
+          }
+          infoDiv.innerHTML = `
+            <div><strong>终端ID:</strong> ${terminal.id}</div>
+            <div><strong>类型:</strong> ${terminal.type}</div>
+            <div><strong>状态:</strong> <span class="${statusClass}">${terminal.status}</span></div>
+          `;
+        })
+        .catch(error => {
+          document.getElementById('selectedTerminalInfo').innerHTML = `获取终端信息失败: ${error.message}`;
+        });
+    }
+
+    // 刷新终端列表按钮事件
+    document.getElementById('refreshTerminalsBtn').addEventListener('click', () => {
+      document.getElementById('terminalTableBody').innerHTML = '<tr><td colspan="4" class="text-center">加载中...</td></tr>';
+      getTerminalList();
+    });
+
+    // 提交任务到指定终端
     document.getElementById('submitTaskBtn').addEventListener('click', () => {
       try {
-        const taskData = JSON.parse(document.getElementById('taskData').value);
-        const priority = document.getElementById('taskPriority').value;
+        const selectedRadio = document.querySelector('input[name="terminalSelect"]:checked');
+        if (!selectedRadio) {
+          addMessage('请选择终端', 'error');
+          return;
+        }
+
+        const terminalId = selectedRadio.value;
+        const action = document.getElementById('actionInput').value;
+        const data = document.getElementById('dataInput').value;
+        const taskData = { action, data };
+
+        if (!action || !data) {
+          addMessage('操作类型和任务数据不能为空', 'error');
+          return;
+        }
 
         // 使用HTTP API提交任务
-        fetch('/api/task/submit?priority=' + priority, {
+        fetch(`/api/task/submit?terminalId=${terminalId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -268,7 +312,6 @@
         .then(data => {
           if (data.taskId) {
             addMessage(`任务提交成功，任务ID: ${data.taskId}`, 'success');
-            document.getElementById('taskId').value = data.taskId;
           } else {
             addMessage(`任务提交失败: ${data.message}`, 'error');
           }
@@ -281,121 +324,10 @@
       }
     });
 
-    // 查询任务状态
-    document.getElementById('queryTaskStatusBtn').addEventListener('click', () => {
-      const taskId = document.getElementById('taskId').value;
-      if (!taskId) {
-        addMessage('请输入任务ID', 'error');
-        return;
-      }
-
-      fetch(`/api/task/status/${taskId}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.taskId) {
-            addMessage(`任务状态查询成功: ${data.status}`, 'success');
-            document.getElementById('taskStatus').textContent = 
-              `ID: ${data.taskId}, 状态: ${data.status}, 创建时间: ${new Date(data.createdAt).toLocaleString()}, 更新时间: ${new Date(data.updatedAt).toLocaleString()}`;
-          } else {
-            addMessage(`任务状态查询失败: ${data.message}`, 'error');
-            document.getElementById('taskStatus').textContent = '';
-          }
-        })
-        .catch(error => {
-          addMessage(`任务状态查询错误: ${error.message}`, 'error');
-        });
-    });
-
-    // 获取任务结果
-    document.getElementById('getTaskResultBtn').addEventListener('click', () => {
-      const taskId = document.getElementById('taskId').value;
-      if (!taskId) {
-        addMessage('请输入任务ID', 'error');
-        return;
-      }
-
-      fetch(`/api/task/result/${taskId}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.result !== undefined) {
-            addMessage('任务结果获取成功', 'success');
-            document.getElementById('taskResult').textContent = JSON.stringify(data.result, null, 2);
-          } else {
-            addMessage(`任务结果获取失败: ${data.message}`, 'error');
-            document.getElementById('taskResult').textContent = '';
-          }
-        })
-        .catch(error => {
-          addMessage(`任务结果获取错误: ${error.message}`, 'error');
-        });
-    });
-
-    // 事件监听器
-    document.getElementById('setCacheBtn').addEventListener('click', () => {
-      const key = document.getElementById('cacheKey').value;
-      const value = document.getElementById('cacheValue').value;
-      const ttl = parseInt(document.getElementById('cacheTtl').value) || 3600;
-
-      if (!key) {
-        addMessage('请输入缓存键', 'error');
-        return;
-      }
-
-      try {
-        // 尝试解析值为JSON，如果失败则作为字符串处理
-        const parsedValue = JSON.parse(value);
-        sendMessage({
-          type: 'cache_set',
-          key: key,
-          value: parsedValue,
-          ttl: ttl
-        });
-      } catch (error) {
-        sendMessage({
-          type: 'cache_set',
-          key: key,
-          value: value,
-          ttl: ttl
-        });
-      }
-    });
-
-    document.getElementById('getCacheBtn').addEventListener('click', () => {
-      const key = document.getElementById('cacheKey').value;
-
-      if (!key) {
-        addMessage('请输入缓存键', 'error');
-        return;
-      }
-
-      sendMessage({
-        type: 'cache_get',
-        key: key
-      });
-    });
-
-    document.getElementById('deleteCacheBtn').addEventListener('click', () => {
-      const key = document.getElementById('cacheKey').value;
-
-      if (!key) {
-        addMessage('请输入缓存键', 'error');
-        return;
-      }
-
-      sendMessage({
-        type: 'cache_delete',
-        key: key
-      });
-    });
-
-    document.getElementById('clearCacheBtn').addEventListener('click', () => {
-      sendMessage({
-        type: 'cache_clear'
-      });
-    });
-
-    // 初始连接
+    // 初始连接和获取终端列表
     connectWebSocket();
+    // 延迟1秒后获取终端列表，确保WebSocket连接已建立
+    setTimeout(getTerminalList, 1000);
   </script>
 </body>
 </html>

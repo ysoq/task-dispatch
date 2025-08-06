@@ -22,14 +22,26 @@ class TaskScheduler {
   }
 
   // 添加任务到调度队列
-  scheduleTask(taskData, priority = 'medium') {
+  scheduleTask(taskData, priority = 'medium', terminalId = null) {
     // 验证优先级
     if (!['high', 'medium', 'low'].includes(priority)) {
       priority = 'medium';
     }
 
-    // 生成任务ID但不立即分配终端
+    // 生成任务ID
     const taskId = taskManager.createTask(taskData);
+
+    // 如果指定了终端ID且终端在线，直接分配任务
+    if (terminalId) {
+      const onlineTerminals = this.connectionManager.getOnlineTerminals();
+      if (onlineTerminals.includes(terminalId)) {
+        taskManager._dispatchTaskToTerminal(taskId, terminalId);
+        console.log(`Task ${taskId} directly assigned to terminal ${terminalId}`);
+        return taskId;
+      } else {
+        console.warn(`Terminal ${terminalId} is not online, adding to ${priority} priority queue instead`);
+      }
+    }
 
     // 添加到优先级队列
     this.priorityQueues[priority].push({
