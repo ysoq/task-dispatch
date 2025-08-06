@@ -59,10 +59,6 @@
         <button id="refreshTerminalsBtn" class="btn btn-secondary btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
       </div>
 
-      <div class="mb-3 p-3 bg-info bg-opacity-10 rounded border border-info">
-        <h4 class="h6 mb-2 text-info"><i class="fas fa-terminal"></i> 当前选择的终端</h4>
-        <div id="selectedTerminalInfo" class="font-medium">未选择终端</div>
-      </div>
       <div class="overflow-x-auto">
         <table class="table table-striped terminal-table" id="terminalTable">
           <thead>
@@ -79,6 +75,11 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="mb-3 p-3 bg-info bg-opacity-10 rounded border border-info mt-3">
+        <h4 class="h6 mb-2 text-info"><i class="fas fa-terminal"></i> 当前选择的终端</h4>
+        <div id="selectedTerminalInfo" class="font-medium">未选择终端</div>
       </div>
     </div>
 
