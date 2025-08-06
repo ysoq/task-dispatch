@@ -46,11 +46,6 @@
   <h1>终端任务调度系统</h1>
 
   <div class="container border rounded p-4 shadow-sm">
-    <h2 class="text-primary mb-3"><i class="fas fa-plug"></i> WebSocket连接状态</h2>
-    <div id="connectionStatus" class="fs-5 font-medium">未连接</div>
-  </div>
-
-  <div class="container border rounded p-4 shadow-sm">
     <h2 class="text-primary mb-3"><i class="fas fa-tasks"></i> 任务下发</h2>
 
     <div class="mb-4">
@@ -142,7 +137,6 @@
     // WebSocket连接
     let socket;
     const messagesDiv = document.getElementById('messages');
-    const connectionStatus = document.getElementById('connectionStatus');
 
     // 连接WebSocket服务器
     function connectWebSocket() {
@@ -158,8 +152,6 @@
 
       // 连接打开时
       socket.onopen = () => {
-        connectionStatus.textContent = '已连接';
-        connectionStatus.style.color = 'green';
         addMessage('WebSocket连接已建立');
       };
 
@@ -175,8 +167,6 @@
 
       // 连接关闭时
       socket.onclose = () => {
-        connectionStatus.textContent = '已断开';
-        connectionStatus.style.color = 'red';
         addMessage('WebSocket连接已关闭');
 
         // 尝试重连

@@ -58,7 +58,7 @@ router.get('/:id/task', (req, res) => {
   if (task) {
     res.json(task);
   } else {
-    res.status(204).json({}); // 没有任务
+    res.json({ success: false, message: '没有任务' });
   }
 });
 
