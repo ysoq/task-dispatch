@@ -81,6 +81,11 @@
         <h4 class="h6 mb-2 text-info"><i class="fas fa-terminal"></i> 当前选择的终端</h4>
         <div id="selectedTerminalInfo" class="font-medium">未选择终端</div>
       </div>
+
+      <div class="mb-3 p-3 bg-secondary bg-opacity-10 rounded border border-secondary mt-3">
+        <h4 class="h6 mb-2 text-secondary"><i class="fas fa-history"></i> 终端最近任务</h4>
+        <div id="terminalTaskHistory" class="font-medium">请选择终端查看任务历史</div>
+      </div>
     </div>
 
     <div class="mb-3">
@@ -251,6 +256,53 @@
       }
     }
 
+    // 获取终端任务历史
+    function fetchTerminalTaskHistory(terminalId) {
+      fetch(`/api/terminal/${terminalId}/task/history`)
+        .then(response => response.json())
+        .then(taskHistory => {
+          const historyDiv = document.getElementById('terminalTaskHistory');
+
+          if (taskHistory.length === 0) {
+            historyDiv.innerHTML = '该终端没有任务历史';
+            return;
+          }
+
+          let historyHtml = '<ul class="list-unstyled mt-1 mb-0">';
+          taskHistory.forEach(task => {
+            let statusClass = '';
+            let statusText = '';
+            if (task.status === 'completed') {
+              statusClass = 'text-success';
+              statusText = '已完成';
+            } else if (task.status === 'pending') {
+              statusClass = 'text-warning';
+              statusText = '处理中';
+            }
+
+            // 格式化时间
+            const assignedTime = new Date(task.assignedAt).toLocaleString();
+            let completedTime = '未完成';
+            if (task.completedAt) {
+              completedTime = new Date(task.completedAt).toLocaleString();
+            }
+
+            historyHtml += `<li class="mb-2 pb-2 border-b border-gray-200">
+              <div><strong>任务ID:</strong> ${task.taskId}</div>
+              <div><strong>分配时间:</strong> ${assignedTime}</div>
+              <div><strong>状态:</strong> <span class="${statusClass}">${statusText}</span></div>
+              <div><strong>完成时间:</strong> ${completedTime}</div>
+            </li>`;
+          });
+          historyHtml += '</ul>';
+
+          historyDiv.innerHTML = historyHtml;
+        })
+        .catch(error => {
+          document.getElementById('terminalTaskHistory').innerHTML = `获取任务历史失败: ${error.message}`;
+        });
+    }
+
     // 更新选中终端信息
     function updateSelectedTerminalInfo(terminalId) {
       fetch(`/api/terminal/${terminalId}`)
@@ -284,9 +336,13 @@
             <div><strong>状态:</strong> <span class="${statusClass}">${terminal.status}</span></div>
             ${metadataHtml}
           `;
+
+          // 获取并展示任务历史
+          fetchTerminalTaskHistory(terminalId);
         })
         .catch(error => {
           document.getElementById('selectedTerminalInfo').innerHTML = `获取终端信息失败: ${error.message}`;
+          document.getElementById('terminalTaskHistory').innerHTML = '请选择终端查看任务历史';
         });
     }
 

@@ -9,6 +9,8 @@ class TerminalManager {
   constructor() {
     // 存储所有已注册的终端
     this.terminals = new Map();
+    // 存储终端任务历史
+    this.terminalTaskHistory = new Map();
   }
 
   /**
@@ -118,6 +120,17 @@ class TerminalManager {
     terminal.taskQueue.push(task);
     terminal.status = 'busy';
 
+    // 添加到任务历史
+    if (!this.terminalTaskHistory.has(terminalId)) {
+      this.terminalTaskHistory.set(terminalId, []);
+    }
+    this.terminalTaskHistory.get(terminalId).push({
+      taskId: task.taskId,
+      assignedAt: Date.now(),
+      status: 'pending',
+      taskData: task
+    });
+
     // 更新缓存
     terminalCache.set(`terminal:${terminalId}`, terminal);
 
@@ -162,6 +175,17 @@ class TerminalManager {
       // 这里可以实现将任务结果存储到数据库或缓存
       terminalCache.set(`task:result:${taskId}`, result);
 
+      // 更新任务历史状态
+      if (this.terminalTaskHistory.has(terminalId)) {
+        const taskHistory = this.terminalTaskHistory.get(terminalId);
+        const taskIndex = taskHistory.findIndex(t => t.taskId === taskId);
+        if (taskIndex !== -1) {
+          taskHistory[taskIndex].status = 'completed';
+          taskHistory[taskIndex].completedAt = Date.now();
+          taskHistory[taskIndex].result = result;
+        }
+      }
+
       // 更新终端状态
       const terminal = this.terminals.get(terminalId);
       if (terminal) {
@@ -179,6 +203,21 @@ class TerminalManager {
       console.error('任务结果上传失败:', error);
       return { success: false, message: `任务结果上传失败: ${error.message}` };
     }
+  }
+  /**
+   * 获取终端任务历史
+   * @param {string} terminalId - 终端ID
+   * @param {number} limit - 限制返回的任务数量
+   * @returns {Array} 任务历史列表
+   */
+  getTerminalTaskHistory(terminalId, limit = 10) {
+    if (!this.terminalTaskHistory.has(terminalId)) {
+      return [];
+    }
+    // 返回最近的任务，按分配时间倒序
+    return [...this.terminalTaskHistory.get(terminalId)]
+      .sort((a, b) => b.assignedAt - a.assignedAt)
+      .slice(0, limit);
   }
 }
 

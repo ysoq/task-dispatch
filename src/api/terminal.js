@@ -73,4 +73,15 @@ router.post('/:id/task/result', (req, res) => {
   res.json(uploadResult);
 });
 
+/**
+ * @route GET /api/terminal/:id/task/history
+ * @desc 获取终端任务历史
+ * @access Public
+ */
+router.get('/:id/task/history', (req, res) => {
+  const { limit } = req.query;
+  const taskHistory = terminalManager.getTerminalTaskHistory(req.params.id, parseInt(limit) || 10);
+  res.json(taskHistory);
+});
+
 module.exports = router;
