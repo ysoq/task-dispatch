@@ -264,10 +264,24 @@
           } else {
             statusClass = 'text-warning';
           }
+          // 构建元数据HTML
+          let metadataHtml = '<div><strong>元数据:</strong> ';
+          if (terminal.metadata && Object.keys(terminal.metadata).length > 0) {
+            metadataHtml += '<ul class="list-unstyled mt-1 mb-0">';
+            for (const [key, value] of Object.entries(terminal.metadata)) {
+              metadataHtml += `<li><strong>${key}:</strong> ${value}</li>`;
+            }
+            metadataHtml += '</ul>';
+          } else {
+            metadataHtml += '无元数据';
+          }
+          metadataHtml += '</div>';
+
           infoDiv.innerHTML = `
             <div><strong>终端ID:</strong> ${terminal.id}</div>
             <div><strong>类型:</strong> ${terminal.type}</div>
             <div><strong>状态:</strong> <span class="${statusClass}">${terminal.status}</span></div>
+            ${metadataHtml}
           `;
         })
         .catch(error => {
