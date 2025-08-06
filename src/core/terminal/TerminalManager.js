@@ -200,8 +200,23 @@ class TerminalManager {
       console.log(`终端 ${terminalId} 上传任务 ${taskId} 结果成功`);
       return { success: true, message: '任务结果上传成功' };
     } catch (error) {
-      console.error('任务结果上传失败:', error);
+      console.error(`终端 ${terminalId} 上传任务 ${taskId} 结果失败:`, error);
       return { success: false, message: `任务结果上传失败: ${error.message}` };
+    }
+  }
+
+  /**
+   * 获取任务结果
+   * @param {string} taskId - 任务ID
+   * @returns {Object|null} 任务结果或null
+   */
+  getTaskResult(taskId) {
+    try {
+      const result = terminalCache.get(`task:result:${taskId}`);
+      return result || null;
+    } catch (error) {
+      console.error(`获取任务 ${taskId} 结果失败:`, error);
+      return null;
     }
   }
   /**

@@ -84,4 +84,19 @@ router.get('/:id/task/history', (req, res) => {
   res.json(taskHistory);
 });
 
+/**
+ * @route GET /api/terminal/:id/task/:taskId/result
+ * @desc 获取任务结果
+ * @access Public
+ */
+router.get('/:id/task/:taskId/result', (req, res) => {
+  const { taskId } = req.params;
+  const result = terminalManager.getTaskResult(taskId);
+  if (result) {
+    res.json(result);
+  } else {
+    res.status(404).json({ success: false, message: '任务结果不存在' });
+  }
+});
+
 module.exports = router;
