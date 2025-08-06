@@ -152,10 +152,9 @@ class TerminalManager {
     // 获取队列中的第一个任务
     const task = terminal.taskQueue.shift();
 
-    // 如果任务队列为空，将终端状态设为在线
-    if (terminal.taskQueue.length === 0) {
-      terminal.status = 'online';
-    }
+    // 更新最后活动时间
+    terminal.lastActiveAt = Date.now();
+    terminal.status = 'online';
 
     // 更新缓存
     terminalCache.set(`terminal:${terminalId}`, terminal);

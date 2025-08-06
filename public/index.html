@@ -62,6 +62,7 @@
               <th>终端ID</th>
               <th>类型</th>
               <th>状态</th>
+              <th>最后在线时间</th>
             </tr>
           </thead>
           <tbody id="terminalTableBody">
@@ -242,11 +243,18 @@
               statusClass = 'text-warning';
             }
 
+            // 格式化最后在线时间
+            let lastOnlineTime = '未知';
+            if (terminal.lastActiveAt) {
+              lastOnlineTime = new Date(terminal.lastActiveAt).toLocaleString();
+            }
+
             row.innerHTML = `
               <td><input type="radio" name="terminalSelect" value="${terminal.id}"></td>
               <td>${terminal.id}</td>
               <td>${terminal.type}</td>
               <td class="${statusClass}">${terminal.status}</td>
+              <td>${lastOnlineTime}</td>
             `;
 
             tableBody.appendChild(row);
