@@ -1,16 +1,11 @@
-const NodeCache = require('node-cache');
 const config = require('../../config');
 const { v4: uuidv4 } = require('uuid');
-
-// 创建本地缓存实例
-const terminalCache = new NodeCache({ stdTTL: config.storage.localCache.ttl });
+// 导入数据库管理器
+const dbManager = require('../../utils/dbManager');
 
 class TerminalManager {
   constructor() {
-    // 存储所有已注册的终端
-    this.terminals = new Map();
-    // 存储终端任务历史
-    this.terminalTaskHistory = new Map();
+    // 不需要在内存中存储任务历史，使用数据库
   }
 
   /**
@@ -30,7 +25,8 @@ class TerminalManager {
       }
 
       // 检查终端是否已存在
-      if (this.terminals.has(id)) {
+      const existingTerminal = dbManager.getTerminal(id);
+      if (existingTerminal) {
         return { success: false, message: '终端已存在' };
       }
 
@@ -44,14 +40,15 @@ class TerminalManager {
         status: 'online'
       };
 
-      // 存储终端信息
-      this.terminals.set(id, terminal);
+      // 保存到数据库
+      const result = dbManager.registerTerminal(terminal);
 
-      // 保存到缓存
-      terminalCache.set(`terminal:${id}`, terminal);
-
-      console.log(`终端 ${id} (类型: ${type}) 注册成功`);
-      return { success: true, terminalId: id, message: '终端注册成功' };
+      if (result) {
+        console.log(`终端 ${id} (类型: ${type}) 注册成功`);
+        return { success: true, terminalId: id, message: '终端注册成功' };
+      } else {
+        return { success: false, message: '终端注册失败' };
+      }
     } catch (error) {
       console.error('终端注册失败:', error);
       return { success: false, message: `终端注册失败: ${error.message}` };
@@ -63,7 +60,12 @@ class TerminalManager {
    * @returns {Array} 终端列表
    */
   getAllTerminals() {
-    return Array.from(this.terminals.values());
+    try {
+      return dbManager.getAllTerminals();
+    } catch (error) {
+      console.error('获取所有终端失败:', error);
+      return [];
+    }
   }
 
   /**
@@ -72,7 +74,12 @@ class TerminalManager {
    * @returns {Object|null} 终端信息或null
    */
   getTerminal(terminalId) {
-    return this.terminals.get(terminalId) || null;
+    try {
+      return dbManager.getTerminal(terminalId) || null;
+    } catch (error) {
+      console.error(`获取终端 ${terminalId} 失败:`, error);
+      return null;
+    }
   }
 
   /**
@@ -82,18 +89,17 @@ class TerminalManager {
    * @returns {Object} 更新结果
    */
   updateTerminalStatus(terminalId, status) {
-    const terminal = this.terminals.get(terminalId);
-    if (!terminal) {
-      return { success: false, message: '终端不存在' };
+    try {
+      const result = dbManager.updateTerminalStatus(terminalId, status);
+      if (result) {
+        return { success: true, message: '终端状态更新成功' };
+      } else {
+        return { success: false, message: '终端不存在或更新失败' };
+      }
+    } catch (error) {
+      console.error(`更新终端 ${terminalId} 状态失败:`, error);
+      return { success: false, message: `终端状态更新失败: ${error.message}` };
     }
-
-    terminal.status = status;
-    terminal.lastActiveAt = Date.now();
-
-    // 更新缓存
-    terminalCache.set(`terminal:${terminalId}`, terminal);
-
-    return { success: true, message: '终端状态更新成功' };
   }
 
   /**
@@ -103,39 +109,41 @@ class TerminalManager {
    * @returns {Object} 分配结果
    */
   assignTaskToTerminal(terminalId, task) {
-    const terminal = this.terminals.get(terminalId);
-    if (!terminal) {
-      return { success: false, message: '终端不存在' };
+    try {
+      // 检查终端是否存在且在线
+      const terminal = dbManager.getTerminal(terminalId);
+      if (!terminal) {
+        return { success: false, message: '终端不存在' };
+      }
+
+      if (terminal.status !== 'online') {
+        return { success: false, message: '终端不在线' };
+      }
+
+      // 准备任务数据
+      const taskToCreate = {
+        id: task.taskId,
+        terminalId: terminalId,
+        taskData: task,
+        priority: task.priority || 'medium',
+        status: 'pending'
+      };
+
+      // 创建任务
+      const createResult = dbManager.createTask(taskToCreate);
+      if (!createResult) {
+        return { success: false, message: '任务创建失败' };
+      }
+
+      // 更新终端状态为忙碌
+      dbManager.updateTerminalStatus(terminalId, 'busy');
+
+      console.log(`任务 ${task.taskId} 已分配给终端 ${terminalId}`);
+      return { success: true, message: '任务分配成功' };
+    } catch (error) {
+      console.error(`任务分配失败:`, error);
+      return { success: false, message: `任务分配失败: ${error.message}` };
     }
-
-    if (terminal.status !== 'online') {
-      return { success: false, message: '终端不在线' };
-    }
-
-    // 将任务添加到终端的任务队列
-    if (!terminal.taskQueue) {
-      terminal.taskQueue = [];
-    }
-
-    terminal.taskQueue.push(task);
-    terminal.status = 'busy';
-
-    // 添加到任务历史
-    if (!this.terminalTaskHistory.has(terminalId)) {
-      this.terminalTaskHistory.set(terminalId, []);
-    }
-    this.terminalTaskHistory.get(terminalId).push({
-      taskId: task.taskId,
-      assignedAt: Date.now(),
-      status: 'pending',
-      taskData: task
-    });
-
-    // 更新缓存
-    terminalCache.set(`terminal:${terminalId}`, terminal);
-
-    console.log(`任务 ${task.taskId} 已分配给终端 ${terminalId}`);
-    return { success: true, message: '任务分配成功' };
   }
 
   /**
@@ -144,22 +152,29 @@ class TerminalManager {
    * @returns {Object|null} 任务对象或null
    */
   getNextTaskForTerminal(terminalId) {
-    const terminal = this.terminals.get(terminalId);
-    if (!terminal || !terminal.taskQueue || terminal.taskQueue.length === 0) {
+    try {
+      // 获取终端的任务队列
+      const tasks = dbManager.getTerminalTasks(terminalId);
+      if (!tasks || tasks.length === 0) {
+        // 如果没有任务，更新终端状态为在线
+        dbManager.updateTerminalStatus(terminalId, 'online');
+        return null;
+      }
+
+      // 获取第一个待处理的任务
+      const task = tasks.find(t => t.status === 'pending');
+      if (!task) {
+        return null;
+      }
+
+      // 更新任务状态为处理中
+      dbManager.updateTaskStatus(task.id, 'processing');
+
+      return task.task_data;
+    } catch (error) {
+      console.error(`获取终端 ${terminalId} 任务失败:`, error);
       return null;
     }
-
-    // 获取队列中的第一个任务
-    const task = terminal.taskQueue.shift();
-
-    // 更新最后活动时间
-    terminal.lastActiveAt = Date.now();
-    terminal.status = 'online';
-
-    // 更新缓存
-    terminalCache.set(`terminal:${terminalId}`, terminal);
-
-    return task;
   }
 
   /**
@@ -171,29 +186,27 @@ class TerminalManager {
    */
   uploadTaskResult(terminalId, taskId, result) {
     try {
-      // 这里可以实现将任务结果存储到数据库或缓存
-      terminalCache.set(`task:result:${taskId}`, result);
+      // 更新任务状态为完成
+      dbManager.updateTaskStatus(taskId, 'completed');
 
-      // 更新任务历史状态
-      if (this.terminalTaskHistory.has(terminalId)) {
-        const taskHistory = this.terminalTaskHistory.get(terminalId);
-        const taskIndex = taskHistory.findIndex(t => t.taskId === taskId);
-        if (taskIndex !== -1) {
-          taskHistory[taskIndex].status = 'completed';
-          taskHistory[taskIndex].completedAt = Date.now();
-          taskHistory[taskIndex].result = result;
-        }
-      }
+      // 保存任务结果
+      const resultToSave = {
+        id: uuidv4().substring(0, 8),
+        taskId: taskId,
+        resultData: result,
+        status: 'success'
+      };
+      dbManager.saveTaskResult(resultToSave);
+
+      // 检查终端是否还有其他任务
+      const tasks = dbManager.getTerminalTasks(terminalId);
+      const hasPendingTasks = tasks.some(t => t.status === 'pending');
 
       // 更新终端状态
-      const terminal = this.terminals.get(terminalId);
-      if (terminal) {
-        terminal.lastActiveAt = Date.now();
-        // 如果没有更多任务，将状态设为在线
-        if (!terminal.taskQueue || terminal.taskQueue.length === 0) {
-          terminal.status = 'online';
-        }
-        terminalCache.set(`terminal:${terminalId}`, terminal);
+      if (hasPendingTasks) {
+        dbManager.updateTerminalStatus(terminalId, 'busy');
+      } else {
+        dbManager.updateTerminalStatus(terminalId, 'online');
       }
 
       console.log(`终端 ${terminalId} 上传任务 ${taskId} 结果成功`);
@@ -211,8 +224,8 @@ class TerminalManager {
    */
   getTaskResult(taskId) {
     try {
-      const result = terminalCache.get(`task:result:${taskId}`);
-      return result || null;
+      const result = dbManager.getTaskResult(taskId);
+      return result ? result.result_data : null;
     } catch (error) {
       console.error(`获取任务 ${taskId} 结果失败:`, error);
       return null;
@@ -225,13 +238,25 @@ class TerminalManager {
    * @returns {Array} 任务历史列表
    */
   getTerminalTaskHistory(terminalId, limit = 10) {
-    if (!this.terminalTaskHistory.has(terminalId)) {
+    try {
+      // 从数据库获取终端的所有任务
+      const tasks = dbManager.getTerminalTasks(terminalId);
+      // 按创建时间倒序排序并限制数量
+      return tasks
+        .sort((a, b) => b.created_at - a.created_at)
+        .slice(0, limit)
+        .map(task => ({
+          taskId: task.id,
+          assignedAt: task.created_at,
+          startedAt: task.started_at,
+          completedAt: task.completed_at,
+          status: task.status,
+          taskData: task.task_data
+        }));
+    } catch (error) {
+      console.error(`获取终端 ${terminalId} 任务历史失败:`, error);
       return [];
     }
-    // 返回最近的任务，按分配时间倒序
-    return [...this.terminalTaskHistory.get(terminalId)]
-      .sort((a, b) => b.assignedAt - a.assignedAt)
-      .slice(0, limit);
   }
 }
 

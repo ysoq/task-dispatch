@@ -1,10 +1,9 @@
 const { v4: uuidv4Task } = require('uuid');
-const NodeCache = require('node-cache');
 const config = require('../../config');
-const ConnectionManager = require('../connection/ConnectionManager');
+// 导入SQLite缓存工具
+const taskCache = require('../../utils/sqliteCache');
 
-// 创建本地缓存实例
-const taskCache = new NodeCache({ stdTTL: config.storage.localCache.ttl });
+// 使用SQLite缓存替代NodeCache
 
 class TaskManager {
   constructor() {

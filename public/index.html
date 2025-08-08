@@ -224,7 +224,7 @@
           tableBody.innerHTML = '';
 
           if (terminals.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">无可用终端</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">无可用终端</td></tr>';
             return;
           }
 
@@ -401,7 +401,7 @@
 
     // 刷新终端列表按钮事件
     document.getElementById('refreshTerminalsBtn').addEventListener('click', () => {
-      document.getElementById('terminalTableBody').innerHTML = '<tr><td colspan="4" class="text-center">加载中...</td></tr>';
+      document.getElementById('terminalTableBody').innerHTML = '<tr><td colspan="5" class="text-center">加载中...</td></tr>';
       getTerminalList();
     });
 

@@ -1,19 +1,20 @@
 const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
-const NodeCache = require('node-cache');
 const config = require('../../config');
+// 导入数据库管理器
+const dbManager = require('../../utils/dbManager');
+// 导入WebSocket模块
+const WebSocketModule = require('ws');
 
-// 创建本地缓存实例
-const localCache = new NodeCache({ stdTTL: config.storage.localCache.ttl });
+// 使用数据库管理终端状态
 
 class ConnectionManager {
   constructor(server) {
-    this.wss = new WebSocket.Server({
+    this.wss = new WebSocketModule.Server({
       server,
       path: config.websocket.path
     });
     this.connections = new Map(); // 存储WebSocket连接
-    this.terminalStatus = new Map(); // 存储终端状态
 
     // 绑定事件处理器
     this._bindEvents();
@@ -106,17 +107,22 @@ class ConnectionManager {
 
   // 更新终端状态
   _updateTerminalStatus(terminalId, status) {
-    const lastActive = Date.now();
-    this.terminalStatus.set(terminalId, {
-      status,
-      lastActive
-    });
-
-    // 同步到本地缓存
-    localCache.set(`terminal:${terminalId}`, {
-      status,
-      lastActive
-    });
+    // 检查终端是否存在
+    const terminal = dbManager.getTerminal(terminalId);
+    if (terminal) {
+      // 更新现有终端的状态
+      dbManager.updateTerminalStatus(terminalId, status);
+    } else {
+      // 如果终端不存在，创建一个新的终端记录
+      dbManager.registerTerminal({
+        id: terminalId,
+        type: 'unknown',
+        metadata: {},
+        registeredAt: Date.now(),
+        lastActiveAt: Date.now(),
+        status: status
+      });
+    }
 
     console.log(`终端 ${terminalId} 状态更新为: ${status}`);
   }
@@ -147,19 +153,22 @@ class ConnectionManager {
 
   // 获取终端状态
   getTerminalStatus(terminalId) {
-    // 先检查内存中的状态
-    if (this.terminalStatus.has(terminalId)) {
-      return this.terminalStatus.get(terminalId);
-    }
+    try {
+      // 从数据库获取终端信息
+      const terminal = dbManager.getTerminal(terminalId);
+      if (terminal) {
+        return {
+          status: terminal.status,
+          lastActive: terminal.last_active_at
+        };
+      }
 
-    // 从本地缓存中获取
-    const status = localCache.get(`terminal:${terminalId}`);
-    if (status) {
-      return status;
+      // 如果没有，返回默认状态
+      return { status: 'unknown', lastActive: 0 };
+    } catch (error) {
+      console.error(`获取终端 ${terminalId} 状态失败:`, error);
+      return { status: 'unknown', lastActive: 0 };
     }
-
-    // 如果都没有，返回默认状态
-    return { status: 'unknown', lastActive: 0 };
   }
 
   // 向指定终端发送消息
@@ -197,14 +206,20 @@ class ConnectionManager {
 
   // 获取所有在线终端
   getOnlineTerminals() {
-    const onlineTerminals = [];
-    this.terminalStatus.forEach((status, terminalId) => {
-      if (status.status === 'online') {
-        onlineTerminals.push(terminalId);
-      }
-    });
-    return onlineTerminals;
+    try {
+      // 从数据库获取在线终端
+      const onlineTerminals = dbManager.getOnlineTerminals();
+      // 只返回终端ID
+      return onlineTerminals.map(terminal => terminal.id);
+    } catch (error) {
+      console.error('获取在线终端失败:', error);
+      return [];
+    }
   }
+
+  // 不再需要从缓存加载终端状态到内存
+  // 所有终端状态操作都直接与数据库交互
+
 
   // 关闭所有连接
   closeAllConnections() {

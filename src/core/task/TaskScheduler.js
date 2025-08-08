@@ -1,9 +1,8 @@
-const NodeCache = require('node-cache');
-const config = require('../../config');
 const taskManager = require('./TaskManager');
+// 导入SQLite缓存工具
+const schedulerCache = require('../../utils/sqliteCache');
 
-// 创建本地缓存实例
-const schedulerCache = new NodeCache({ stdTTL: config.storage.localCache.ttl });
+// 使用SQLite缓存替代NodeCache
 
 class TaskScheduler {
   constructor(connectionManager) {

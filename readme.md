@@ -81,7 +81,7 @@ taskMetadata.set('task:meta:T001_xxx', {
 });
 
 // 任务结果
-const taskResults = new NodeCache({ stdTTL: 86400 });
+const taskResults = require('./src/utils/sqliteCache');
 taskResults.set('task:result:T001_xxx', {...});
 
 // 待处理队列
