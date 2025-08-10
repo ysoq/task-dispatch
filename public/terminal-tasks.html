@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -54,6 +55,7 @@
     }
   </style>
 </head>
+
 <body class="font-inter bg-gray-50 min-h-screen">
   <!-- 导航栏 -->
   <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
@@ -64,7 +66,8 @@
       </div>
       <div class="flex items-center space-x-4">
         <nav class="hidden md:flex space-x-6">
-          <a href="dashboard.html" class="text-secondary hover:text-primary transition-colors pb-1 border-b-2 border-transparent hover:border-primary/50">仪表盘</a>
+          <a href="dashboard.html"
+            class="text-secondary hover:text-primary transition-colors pb-1 border-b-2 border-transparent hover:border-primary/50">仪表盘</a>
           <a href="terminal-tasks.html" class="text-primary font-medium border-b-2 border-primary pb-1">终端任务</a>
         </nav>
         <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
@@ -74,7 +77,8 @@
           <span class="absolute inset-y-0 left-0 flex items-center pl-3">
             <i class="fas fa-search text-secondary"></i>
           </span>
-          <input type="text" placeholder="搜索..." class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-48 lg:w-64 transition-all">
+          <input type="text" placeholder="搜索..."
+            class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-48 lg:w-64 transition-all">
         </div>
       </div>
     </div>
@@ -93,7 +97,8 @@
         <div class="lg:col-span-2">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-dark">终端列表</h3>
-            <button id="refreshTerminalsBtn" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors">
+            <button id="refreshTerminalsBtn"
+              class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors">
               <i class="fas fa-sync-alt mr-2"></i> 刷新
             </button>
           </div>
@@ -102,7 +107,6 @@
             <table class="w-full text-left">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">选择</th>
                   <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">终端ID</th>
                   <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">类型</th>
                   <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">状态</th>
@@ -125,15 +129,20 @@
 
             <div class="mb-4">
               <label for="actionInput" class="block text-sm font-medium text-secondary mb-1">操作类型 (Action)</label>
-              <input type="text" id="actionInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" placeholder="输入操作类型" value="process">
+              <input type="text" id="actionInput"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                placeholder="输入操作类型" value="process">
             </div>
 
             <div class="mb-4">
               <label for="dataInput" class="block text-sm font-medium text-secondary mb-1">任务数据 (Data)</label>
-              <textarea id="dataInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all h-32" placeholder="输入任务数据">示例任务数据</textarea>
+              <textarea id="dataInput"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all h-32"
+                placeholder="输入任务数据">示例任务数据</textarea>
             </div>
 
-            <button id="submitTaskBtn" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+            <button id="submitTaskBtn"
+              class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
               <i class="fas fa-paper-plane mr-2"></i> 下发任务到指定终端
             </button>
           </div>
@@ -163,10 +172,12 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-dark"><i class="fas fa-history text-primary mr-2"></i> 任务日志</h2>
         <div class="flex space-x-2">
-          <button id="clearLogBtn" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors text-sm">
+          <button id="clearLogBtn"
+            class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors text-sm">
             <i class="fas fa-trash-alt mr-1"></i> 清空
           </button>
-          <select id="logFilter" class="px-3 py-1.5 bg-gray-100 text-dark rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
+          <select id="logFilter"
+            class="px-3 py-1.5 bg-gray-100 text-dark rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
             <option value="all">全部</option>
             <option value="success">成功</option>
             <option value="error">错误</option>
@@ -179,10 +190,12 @@
   </main>
 
   <!-- 任务结果模态框 -->
-  <div class="modal fixed inset-0 z-50 hidden" id="taskResultModal" aria-labelledby="taskResultModalLabel" aria-hidden="true">
+  <div class="modal fixed inset-0 z-50 hidden" id="taskResultModal" aria-labelledby="taskResultModalLabel"
+    aria-hidden="true">
     <div class="flex items-center justify-center min-h-screen px-4">
       <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-auto overflow-hidden transform transition-all relative z-10 animate-fade-in">
+      <div
+        class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-auto overflow-hidden transform transition-all relative z-10 animate-fade-in">
         <div class="flex items-center justify-between p-5 border-b border-gray-200">
           <h5 class="text-lg font-bold text-dark" id="taskResultTitle">任务结果</h5>
           <button type="button" class="text-secondary hover:text-dark" id="closeModalBtn">
@@ -193,7 +206,8 @@
           <pre id="taskResultBody" class="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto"></pre>
         </div>
         <div class="p-5 border-t border-gray-200 flex justify-end">
-          <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-dark rounded-lg transition-colors" id="cancelModalBtn">关闭</button>
+          <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-dark rounded-lg transition-colors"
+            id="cancelModalBtn">关闭</button>
         </div>
       </div>
     </div>
@@ -231,14 +245,14 @@
     let isDarkMode = false;
 
     // 页面加载完成后初始化
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // 连接WebSocket
       connectWebSocket();
 
       // 刷新按钮点击事件
       const refreshTerminalsBtn = document.getElementById('refreshTerminalsBtn');
       if (refreshTerminalsBtn) {
-        refreshTerminalsBtn.addEventListener('click', function() {
+        refreshTerminalsBtn.addEventListener('click', function () {
           addMessage('手动刷新终端列表...');
           fetchTerminals();
         });
@@ -246,7 +260,7 @@
 
       // 清空日志按钮点击事件
       if (clearLogBtn) {
-        clearLogBtn.addEventListener('click', function() {
+        clearLogBtn.addEventListener('click', function () {
           messagesDiv.innerHTML = '';
           addMessage('日志已清空');
         });
@@ -254,20 +268,20 @@
 
       // 关闭模态框按钮
       if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', function() {
+        closeModalBtn.addEventListener('click', function () {
           taskResultModal.classList.add('hidden');
         });
       }
 
       if (cancelModalBtn) {
-        cancelModalBtn.addEventListener('click', function() {
+        cancelModalBtn.addEventListener('click', function () {
           taskResultModal.classList.add('hidden');
         });
       }
 
       // 关闭提示框按钮
       if (closeToastBtn) {
-        closeToastBtn.addEventListener('click', function() {
+        closeToastBtn.addEventListener('click', function () {
           taskSuccessToast.classList.add('hidden');
         });
       }
@@ -346,7 +360,7 @@
       terminals.forEach(terminal => {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 transition-colors cursor-pointer';
-        row.addEventListener('click', function() {
+        row.addEventListener('click', function () {
           // 移除所有行的选中状态
           document.querySelectorAll('#terminalTableBody tr').forEach(r => {
             r.classList.remove('bg-blue-50');
@@ -365,38 +379,19 @@
             statusClass = 'bg-green-100 text-green-800';
             statusText = '在线';
             break;
-          case 'offline':
+          default:
             statusClass = 'bg-red-100 text-red-800';
             statusText = '离线';
             break;
-          case 'busy':
-            statusClass = 'bg-yellow-100 text-yellow-800';
-            statusText = '忙碌';
-            break;
-          default:
-            statusClass = 'bg-gray-100 text-gray-800';
-            statusText = '未知';
-        }
-
-        // 处理日期显示
-        let lastActiveAt = 'Invalid Date';
-        if (terminal.lastActiveAt) {
-          const date = new Date(terminal.lastActiveAt);
-          if (!isNaN(date.getTime())) {
-            lastActiveAt = date.toLocaleString();
-          }
         }
 
         row.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap">
-            <input type="radio" name="terminalSelect" class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary terminal-radio" value="${terminal.id}">
-          </td>
           <td class="px-6 py-4 whitespace-nowrap font-medium text-dark">${terminal.id}</td>
           <td class="px-6 py-4 whitespace-nowrap text-secondary">${terminal.type}</td>
           <td class="px-6 py-4 whitespace-nowrap">
             <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${statusText}</span>
           </td>
-          <td class="px-6 py-4 whitespace-nowrap text-secondary">${lastActiveAt}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-secondary">${terminal.last_active_at}</td>
         `;
 
         tableBody.appendChild(row);
@@ -418,13 +413,12 @@
         <div class="mb-2"><span class="font-medium">类型:</span> ${terminal.type}</div>
         <div class="mb-2"><span class="font-medium">状态:</span> 
           <span class="px-2 py-0.5 text-xs rounded-full 
-            ${terminal.status === 'online' ? 'bg-green-100 text-green-800' : 
-              terminal.status === 'offline' ? 'bg-red-100 text-red-800' : 
-              terminal.status === 'busy' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${
-              terminal.status === 'online' ? '在线' : 
-              terminal.status === 'offline' ? '离线' : 
-              terminal.status === 'busy' ? '忙碌' : '未知'
-            }</span>
+            ${terminal.status === 'online' ? 'bg-green-100 text-green-800' :
+          terminal.status === 'offline' ? 'bg-red-100 text-red-800' :
+            terminal.status === 'busy' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${terminal.status === 'online' ? '在线' :
+          terminal.status === 'offline' ? '离线' :
+            terminal.status === 'busy' ? '忙碌' : '未知'
+        }</span>
         </div>
         <div><span class="font-medium">最后在线时间:</span> ${formatDate(terminal.lastActiveAt)}</div>
       `;
@@ -512,4 +506,5 @@
     }
   </script>
 </body>
+
 </html>

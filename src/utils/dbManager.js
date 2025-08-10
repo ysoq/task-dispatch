@@ -1,6 +1,6 @@
 const path = require('path');
 const sqlite3 = require('better-sqlite3');
-const config = require('../config');
+const dayjs = require('dayjs')
 
 /**
  * 数据库管理类，负责终端、任务和结果表的操作
@@ -145,6 +145,19 @@ class DBManager {
       return rows.map(row => {
         if (row.metadata) {
           row.metadata = JSON.parse(row.metadata);
+        }
+        if (row.last_active_at) {
+          row.last_active_at = dayjs(row.last_active_at).format('YYYY-MM-DD HH:mm:ss')
+        } else {
+          row.last_active_at = ''
+        }
+        // 根据最后在线时间判断在线状态，超过10分钟认为已离线
+        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+        if (row.last_active_at) {
+          const lastActiveTime = new Date(row.last_active_at).getTime();
+          if (lastActiveTime < tenMinutesAgo) {
+            row.status = 'offline';
+          }
         }
         return row;
       });
