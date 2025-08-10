@@ -103,7 +103,7 @@
             </button>
           </div>
 
-          <div class="overflow-x-auto rounded-xl border border-gray-200">
+          <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-96">
             <table class="w-full text-left">
               <thead class="bg-gray-50">
                 <tr>
@@ -420,7 +420,7 @@
             terminal.status === 'busy' ? '忙碌' : '未知'
         }</span>
         </div>
-        <div><span class="font-medium">最后在线时间:</span> ${formatDate(terminal.lastActiveAt)}</div>
+        <div><span class="font-medium">最后在线时间:</span> ${formatDate(terminal.last_active_at)}</div>
       `;
 
       // 更新终端任务历史
@@ -430,23 +430,78 @@
     // 更新终端任务历史
     function updateTerminalTaskHistory(terminalId) {
       const terminalTaskHistory = document.getElementById('terminalTaskHistory');
-      // 这里应该调用API获取任务历史，暂时用模拟数据
-      terminalTaskHistory.innerHTML = `
-        <div class="space-y-3">
-          <div class="p-2 bg-gray-100 rounded">
-            <div class="flex justify-between"><span class="font-medium">任务ID: T1001</span><span class="text-xs text-secondary">2023-06-15 14:30</span></div>
-            <div class="text-sm mt-1">状态: <span class="text-green-600">已完成</span></div>
-          </div>
-          <div class="p-2 bg-gray-100 rounded">
-            <div class="flex justify-between"><span class="font-medium">任务ID: T0987</span><span class="text-xs text-secondary">2023-06-15 13:45</span></div>
-            <div class="text-sm mt-1">状态: <span class="text-green-600">已完成</span></div>
-          </div>
-          <div class="p-2 bg-gray-100 rounded">
-            <div class="flex justify-between"><span class="font-medium">任务ID: T0952</span><span class="text-xs text-secondary">2023-06-15 10:15</span></div>
-            <div class="text-sm mt-1">状态: <span class="text-yellow-600">失败</span></div>
-          </div>
-        </div>
-      `;
+      terminalTaskHistory.innerHTML = '<div class="text-center text-secondary">加载任务历史中...</div>';
+      fetch(`/api/terminal/${terminalId}/task/history`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('获取任务历史失败');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.length === 0) {
+            terminalTaskHistory.innerHTML = '<div class="text-center text-secondary">没有任务历史记录</div>';
+            return;
+          }
+          
+          const html = data.map(task => {
+            let statusClass = '';
+            let statusText = task.status;
+            
+            switch (task.status) {
+              case 'completed':
+                statusClass = 'text-green-600';
+                statusText = '已完成';
+                break;
+              case 'failed':
+                statusClass = 'text-yellow-600';
+                statusText = '失败';
+                break;
+              default:
+                statusClass = 'text-gray-600';
+            }
+            
+            return `
+              <div class="p-2 bg-gray-100 rounded">
+                <div class="flex justify-between"><span class="font-medium">任务ID: ${task.taskId}</span><span class="text-xs text-secondary">${formatDate(task.completedAt)}</span></div>
+                <div class="text-sm mt-1 flex items-center justify-between">
+                  <span>状态: <span class="${statusClass}">${statusText}</span></span>
+                  ${task.status === 'completed' ? `<button onclick="showTaskResult('${task.taskId}')" class="px-2 py-0.5 bg-primary text-white text-xs rounded hover:bg-primary/90 transition-colors">查询结果</button>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+          
+          terminalTaskHistory.innerHTML = `<div class="space-y-3">${html}</div>`;
+        })
+        .catch(error => {
+          terminalTaskHistory.innerHTML = `<div class="text-center text-danger">获取任务历史失败: ${error.message}</div>`;
+          addMessage(`获取终端 ${terminalId} 的任务历史失败: ${error.message}`, 'error');
+        });
+    }
+
+    function showTaskResult(taskId) {
+      fetch(`/api/terminal/task/${taskId}/result`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('获取任务结果失败');
+          }
+          return response.text();
+        })
+        .then(data => {
+          const taskResultTitle = document.getElementById('taskResultTitle');
+          const taskResultBody = document.getElementById('taskResultBody');
+          
+          // 设置模态框标题
+          taskResultTitle.textContent = '任务结果';
+          // 设置模态框内容
+          taskResultBody.textContent = data;
+          // 显示模态框
+          taskResultModal.classList.remove('hidden');
+        })
+        .catch(error => {
+          addMessage(`获取任务 ${taskId} 结果失败: ${error.message}`, 'error');
+        });
     }
 
     // 处理接收到的消息

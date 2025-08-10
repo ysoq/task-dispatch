@@ -38,23 +38,15 @@ router.get('/:id', (req, res) => {
 });
 
 /**
- * @route PUT /api/terminal/:id/status
- * @desc 更新终端状态
- * @access Public
- */
-router.put('/:id/status', (req, res) => {
-  const { status } = req.body;
-  const result = terminalManager.updateTerminalStatus(req.params.id, status);
-  res.json(result);
-});
-
-/**
  * @route GET /api/terminal/:id/task
  * @desc 终端获取下一个待执行任务
  * @access Public
  */
-router.get('/:id/task', (req, res) => {
-  const task = terminalManager.getNextTaskForTerminal(req.params.id);
+router.post('/next/task', (req, res) => {
+  const terminalInfo = req.body;
+  terminalManager.registerTerminal(terminalInfo);
+  const task = terminalManager.getNextTaskForTerminal(terminalInfo.id);
+
   if (task) {
     res.json(task);
   } else {
@@ -67,9 +59,8 @@ router.get('/:id/task', (req, res) => {
  * @desc 终端上传任务结果
  * @access Public
  */
-router.post('/:id/task/result', (req, res) => {
-  const { taskId, result } = req.body;
-  const uploadResult = terminalManager.uploadTaskResult(req.params.id, taskId, result);
+router.post('/:taskId/task/result', (req, res) => {
+  const uploadResult = terminalManager.uploadTaskResult(req.params.id, taskId, req.body);
   res.json(uploadResult);
 });
 
@@ -85,11 +76,11 @@ router.get('/:id/task/history', (req, res) => {
 });
 
 /**
- * @route GET /api/terminal/:id/task/:taskId/result
+ * @route GET /api/terminal/task/:taskId/result
  * @desc 获取任务结果
  * @access Public
  */
-router.get('/:id/task/:taskId/result', (req, res) => {
+router.get('/task/:taskId/result', (req, res) => {
   const { taskId } = req.params;
   const result = terminalManager.getTaskResult(taskId);
   if (result) {

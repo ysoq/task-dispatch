@@ -268,11 +268,16 @@ class DBManager {
    * @param {string} terminalId - 终端ID
    * @returns {Object[]} - 任务列表
    */
-  getTerminalTasks(terminalId) {
+  getTerminalTasks(terminalId, status) {
     try {
-      const rows = this.db.prepare(
-        'SELECT * FROM tasks WHERE terminal_id = ? ORDER BY created_at ASC'
-      ).all(terminalId);
+      let query = 'SELECT * FROM tasks WHERE terminal_id = ?';
+      const params = [terminalId];
+      if (status) {
+        query += ' AND status = ?';
+        params.push(status);
+      }
+      query += ' ORDER BY created_at ASC';
+      const rows = this.db.prepare(query).all(...params);
 
       // 解析JSON字段
       return rows.map(row => {

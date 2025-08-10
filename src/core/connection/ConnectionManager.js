@@ -37,7 +37,6 @@ class ConnectionManager {
       ws.lastHeartbeat = Date.now();
 
       this.connections.set(connectionId, ws);
-      this._updateTerminalStatus(terminalId, 'online');
 
       console.log(`终端 ${terminalId} 已连接，连接ID: ${connectionId}`);
 
@@ -63,9 +62,6 @@ class ConnectionManager {
         const hasTerminalConnections = Array.from(this.connections.values())
           .some(conn => conn.terminalId === terminalId);
 
-        if (!hasTerminalConnections) {
-          this._updateTerminalStatus(terminalId, 'offline');
-        }
       });
 
       // 处理错误
@@ -80,7 +76,7 @@ class ConnectionManager {
   _handleMessage(ws, data) {
     try {
       const message = JSON.parse(data.toString());
-
+      console.log(message)
       switch (message.type) {
         case 'heartbeat':
           // 更新心跳时间
@@ -143,9 +139,6 @@ class ConnectionManager {
           const hasTerminalConnections = Array.from(this.connections.values())
             .some(conn => conn.terminalId === ws.terminalId);
 
-          if (!hasTerminalConnections) {
-            this._updateTerminalStatus(ws.terminalId, 'offline');
-          }
         }
       });
     }, config.websocket.heartbeatInterval);

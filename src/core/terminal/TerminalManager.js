@@ -154,23 +154,11 @@ class TerminalManager {
   getNextTaskForTerminal(terminalId) {
     try {
       // 获取终端的任务队列
-      const tasks = dbManager.getTerminalTasks(terminalId);
+      const tasks = dbManager.getTerminalTasks(terminalId, 'pending');
       if (!tasks || tasks.length === 0) {
-        // 如果没有任务，更新终端状态为在线
-        dbManager.updateTerminalStatus(terminalId, 'online');
         return null;
       }
-
-      // 获取第一个待处理的任务
-      const task = tasks.find(t => t.status === 'pending');
-      if (!task) {
-        return null;
-      }
-
-      // 更新任务状态为处理中
-      dbManager.updateTaskStatus(task.id, 'processing');
-
-      return task.task_data;
+      return task[0].task_data;
     } catch (error) {
       console.error(`获取终端 ${terminalId} 任务失败:`, error);
       return null;
@@ -179,12 +167,11 @@ class TerminalManager {
 
   /**
    * 终端上传任务结果
-   * @param {string} terminalId - 终端ID
    * @param {string} taskId - 任务ID
    * @param {Object} result - 任务结果
    * @returns {Object} 上传结果
    */
-  uploadTaskResult(terminalId, taskId, result) {
+  uploadTaskResult(taskId, result) {
     try {
       // 更新任务状态为完成
       dbManager.updateTaskStatus(taskId, 'completed');
@@ -198,21 +185,10 @@ class TerminalManager {
       };
       dbManager.saveTaskResult(resultToSave);
 
-      // 检查终端是否还有其他任务
-      const tasks = dbManager.getTerminalTasks(terminalId);
-      const hasPendingTasks = tasks.some(t => t.status === 'pending');
-
-      // 更新终端状态
-      if (hasPendingTasks) {
-        dbManager.updateTerminalStatus(terminalId, 'busy');
-      } else {
-        dbManager.updateTerminalStatus(terminalId, 'online');
-      }
-
-      console.log(`终端 ${terminalId} 上传任务 ${taskId} 结果成功`);
+      console.log(`上传任务 ${taskId} 结果成功`);
       return { success: true, message: '任务结果上传成功' };
     } catch (error) {
-      console.error(`终端 ${terminalId} 上传任务 ${taskId} 结果失败:`, error);
+      console.error(`上传任务 ${taskId} 结果失败:`, error);
       return { success: false, message: `任务结果上传失败: ${error.message}` };
     }
   }
