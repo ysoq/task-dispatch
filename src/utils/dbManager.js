@@ -138,8 +138,17 @@ class DBManager {
    * @returns {Object[]} - 终端列表
    */
   getAllTerminals() {
+    return this.searchTerminals('')
+  }
+
+  /**
+   * 搜索终端
+   * @param {string} searchQuery - 搜索关键词
+   * @returns {Object[]} - 匹配的终端列表
+   */
+  searchTerminals(searchQuery) {
     try {
-      const rows = this.db.prepare('SELECT * FROM terminals order by last_active_at desc').all();
+      const rows = this.db.prepare('SELECT * FROM terminals WHERE id LIKE ? order by last_active_at desc').all(`%${searchQuery}%`);
 
       // 解析JSON字段
       return rows.map(row => {
@@ -162,7 +171,7 @@ class DBManager {
         return row;
       });
     } catch (error) {
-      console.error('获取所有终端失败:', error);
+      console.error('搜索终端失败:', error);
       return [];
     }
   }

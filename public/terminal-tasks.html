@@ -70,16 +70,6 @@
             class="text-secondary hover:text-primary transition-colors pb-1 border-b-2 border-transparent hover:border-primary/50">仪表盘</a>
           <a href="terminal-tasks.html" class="text-primary font-medium border-b-2 border-primary pb-1">终端任务</a>
         </nav>
-        <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
-          <i class="fas fa-moon text-secondary"></i>
-        </button>
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-            <i class="fas fa-search text-secondary"></i>
-          </span>
-          <input type="text" placeholder="搜索..."
-            class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-48 lg:w-64 transition-all">
-        </div>
       </div>
     </div>
   </header>
@@ -95,12 +85,24 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- 终端列表 -->
         <div class="lg:col-span-2">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-dark">终端列表</h3>
-            <button id="refreshTerminalsBtn"
-              class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors">
-              <i class="fas fa-sync-alt mr-2"></i> 刷新
-            </button>
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-semibold text-dark">终端列表</h3>
+              <div class="flex space-x-2">
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <i class="fas fa-search text-secondary"></i>
+                  </span>
+                  <input type="text" id="terminalSearchInput"
+                    class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-48 transition-all"
+                    placeholder="搜索终端ID...">
+                </div>
+                <button id="refreshTerminalsBtn"
+                  class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors">
+                  <i class="fas fa-sync-alt mr-2"></i> 刷新
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-96">
@@ -331,9 +333,10 @@
     }
 
     // 获取终端列表
-    function fetchTerminals() {
+    function fetchTerminals(searchQuery = '') {
       addMessage('正在获取终端列表...');
-      fetch('/api/terminal')
+      const url = searchQuery ? `/api/terminal?search=${encodeURIComponent(searchQuery)}` : '/api/terminal';
+      fetch(url)
         .then(response => response.json())
         .then(terminals => {
           updateTerminalTable(terminals);
@@ -344,6 +347,21 @@
           console.error('获取终端列表失败:', error);
         });
     }
+
+    // 初始化搜索框事件
+    document.addEventListener('DOMContentLoaded', function() {
+      const terminalSearchInput = document.getElementById('terminalSearchInput');
+      if (terminalSearchInput) {
+        terminalSearchInput.addEventListener('input', function() {
+          const searchQuery = this.value.trim();
+          // 延迟搜索，避免频繁请求
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = setTimeout(() => {
+            fetchTerminals(searchQuery);
+          }, 300);
+        });
+      }
+    });
 
     // 更新终端表格
     function updateTerminalTable(terminals) {

@@ -15,12 +15,18 @@ router.post('/register', (req, res) => {
 
 /**
  * @route GET /api/terminal
- * @desc 获取所有终端
+ * @desc 获取所有终端或搜索终端
  * @access Public
  */
 router.get('/', (req, res) => {
-  const terminals = terminalManager.getAllTerminals();
-  res.json(terminals);
+  const { search } = req.query;
+  if (search) {
+    const terminals = terminalManager.searchTerminals(search);
+    res.json(terminals);
+  } else {
+    const terminals = terminalManager.getAllTerminals();
+    res.json(terminals);
+  }
 });
 
 /**

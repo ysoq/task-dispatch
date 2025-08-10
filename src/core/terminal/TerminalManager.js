@@ -69,6 +69,20 @@ class TerminalManager {
   }
 
   /**
+   * 搜索终端
+   * @param {string} searchQuery - 搜索关键词
+   * @returns {Array} 匹配的终端列表
+   */
+  searchTerminals(searchQuery) {
+    try {
+      return dbManager.searchTerminals(searchQuery);
+    } catch (error) {
+      console.error('搜索终端失败:', error);
+      return [];
+    }
+  }
+
+  /**
    * 获取指定终端信息
    * @param {string} terminalId - 终端ID
    * @returns {Object|null} 终端信息或null
