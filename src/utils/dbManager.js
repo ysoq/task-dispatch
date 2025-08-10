@@ -139,7 +139,7 @@ class DBManager {
    */
   getAllTerminals() {
     try {
-      const rows = this.db.prepare('SELECT * FROM terminals').all();
+      const rows = this.db.prepare('SELECT * FROM terminals order by last_active_at desc').all();
 
       // 解析JSON字段
       return rows.map(row => {

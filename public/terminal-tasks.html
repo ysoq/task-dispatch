@@ -407,8 +407,9 @@
 
     // 更新选中终端信息
     function updateSelectedTerminalInfo(terminal) {
+      console.log(terminal)
       const selectedTerminalInfo = document.getElementById('selectedTerminalInfo');
-      selectedTerminalInfo.innerHTML = `
+      var html= `
         <div class="mb-2"><span class="font-medium">终端ID:</span> ${terminal.id}</div>
         <div class="mb-2"><span class="font-medium">类型:</span> ${terminal.type}</div>
         <div class="mb-2"><span class="font-medium">状态:</span> 
@@ -420,8 +421,16 @@
             terminal.status === 'busy' ? '忙碌' : '未知'
         }</span>
         </div>
-        <div><span class="font-medium">最后在线时间:</span> ${formatDate(terminal.last_active_at)}</div>
+        <div class="mb-2"><span class="font-medium">最后在线时间:</span> ${formatDate(terminal.last_active_at)}</div>
+       
       `;
+      if(terminal.metadata) {
+        for(let key in terminal.metadata) {
+          html += `<div class="mb-2"><span class="font-medium">${key}:</span> ${terminal.metadata[key]}</div>`
+        }
+      }
+
+      selectedTerminalInfo.innerHTML = html
 
       // 更新终端任务历史
       updateTerminalTaskHistory(terminal.id);
