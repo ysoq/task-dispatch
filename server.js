@@ -9,8 +9,6 @@ const config = require('./src/config');
 const app = express();
 // 解析JSON请求体
 app.use(express.json());
-// 静态文件服务
-app.use(express.static('public'));
 
 // 创建HTTP服务器
 const server = http.createServer(app);
@@ -50,9 +48,45 @@ app.use('/api/task', taskApi);
 // WebSocket连接处理由connectionManager内部管理
 // 无需在此处添加额外处理逻辑
 
-// 首页路由
-app.get('/', (req, res) => {
+// 定义登录校验中间件
+const checkLogin = (req, res, next) => {
+    // 从请求头获取Authorization
+    const authHeader = req.headers.authorization;
+
+    // 检查是否存在Authorization
+    if (!authHeader) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="Task Dispatch System"');
+        return res.status(401).json({
+            success: false,
+            message: '未提供身份验证信息'
+        });
+    }
+
+    // 解析Authorization (Basic认证)
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    const [username, password] = credentials.split(':');
+
+    // 验证固定账号密码
+    if (username === 'ysok' && password === '123456') {
+        return next(); // 验证通过，继续处理请求
+    } else {
+        res.setHeader('WWW-Authenticate', 'Basic realm="Task Dispatch System"');
+        return res.status(401).json({
+            success: false,
+            message: '账号或密码错误'
+        });
+    }
+};
+
+app.get('/', checkLogin, (req, res) => {
   res.sendFile(__dirname + '/public/dashboard.html');
+});
+app.get('/dashboard', checkLogin, (req, res) => {
+  res.sendFile(__dirname + '/public/dashboard.html');
+});
+app.get('/tasks', checkLogin, (req, res) => {
+  res.sendFile(__dirname + '/public/terminal-tasks.html');
 });
 
 // 启动服务器
