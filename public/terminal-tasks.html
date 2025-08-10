@@ -216,9 +216,19 @@
         <div class="p-5 max-h-[70vh] overflow-y-auto">
           <pre id="taskResultBody" class="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto"></pre>
         </div>
-        <div class="p-5 border-t border-gray-200 flex justify-end">
-          <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-dark rounded-lg transition-colors"
-            id="cancelModalBtn">关闭</button>
+        <div class="p-5 border-t border-gray-200">
+          <div class="flex items-center mb-4">
+            <input type="checkbox" id="autoWrapCheckbox" class="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+            <label for="autoWrapCheckbox" class="text-sm text-secondary">自动换行显示</label>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button type="button" class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+              id="downloadResultBtn">
+              <i class="fas fa-download mr-2"></i>下载结果
+            </button>
+            <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-dark rounded-lg transition-colors"
+              id="cancelModalBtn">关闭</button>
+          </div>
         </div>
       </div>
     </div>
@@ -600,8 +610,12 @@
           
           // 设置模态框标题
           taskResultTitle.textContent = '任务结果';
+          // 保存原始数据用于下载
+          taskResultBody.dataset.rawData = data;
           // 设置模态框内容，将 \r\n 替换为换行符以实现换行显示
           taskResultBody.textContent = data?.replace(/\\r\\n/g, '\n');
+          // 应用自动换行设置
+          applyAutoWrap();
           // 显示模态框
           taskResultModal.classList.remove('hidden');
         })
@@ -609,6 +623,60 @@
           addMessage(`获取任务 ${taskId} 结果失败: ${error.message}`, 'error');
         });
     }
+
+    // 应用自动换行设置
+    function applyAutoWrap() {
+      const autoWrapCheckbox = document.getElementById('autoWrapCheckbox');
+      const taskResultBody = document.getElementById('taskResultBody');
+      if (autoWrapCheckbox && taskResultBody) {
+        if (autoWrapCheckbox.checked) {
+          taskResultBody.style.whiteSpace = 'pre-wrap';
+          taskResultBody.style.wordWrap = 'break-word'; // 添加自动换行支持
+          taskResultBody.style.overflowWrap = 'break-word'; // 确保长单词也能换行
+        } else {
+          taskResultBody.style.whiteSpace = 'pre';
+          taskResultBody.style.wordWrap = 'normal';
+          taskResultBody.style.overflowWrap = 'normal';
+        }
+      }
+    }
+
+    // 下载任务结果
+    function downloadTaskResult() {
+      const taskResultBody = document.getElementById('taskResultBody');
+      const rawData = taskResultBody?.dataset.rawData;
+      if (!rawData) {
+        addMessage('没有可下载的任务结果', 'error');
+        return;
+      }
+
+      const blob = new Blob([rawData], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `task_result_${Date.now()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // 初始化自动换行和下载按钮事件
+    document.addEventListener('DOMContentLoaded', function() {
+      // 自动换行复选框事件
+      const autoWrapCheckbox = document.getElementById('autoWrapCheckbox');
+      if (autoWrapCheckbox) {
+        autoWrapCheckbox.addEventListener('change', applyAutoWrap);
+        // 默认勾选自动换行
+        autoWrapCheckbox.checked = true;
+      }
+
+      // 下载按钮事件
+      const downloadResultBtn = document.getElementById('downloadResultBtn');
+      if (downloadResultBtn) {
+        downloadResultBtn.addEventListener('click', downloadTaskResult);
+      }
+    })
 
     // 处理接收到的消息
     function handleMessage(data) {

@@ -4,9 +4,6 @@ const { v4: uuidv4 } = require('uuid');
 const dbManager = require('../../utils/dbManager');
 
 class TerminalManager {
-  constructor() {
-    // 不需要在内存中存储任务历史，使用数据库
-  }
 
   /**
    * 注册新终端
@@ -27,7 +24,8 @@ class TerminalManager {
       // 检查终端是否已存在
       const existingTerminal = dbManager.getTerminal(id);
       if (existingTerminal) {
-        return { success: false, message: '终端已存在' };
+        dbManager.registerTerminal(terminalInfo);
+        return;
       }
 
       // 创建终端对象

@@ -73,7 +73,6 @@ router.get('/status/:id', (req, res) => {
 router.get('/result/:id', async (req, res) => {
   const taskId = req.params.id;
   const result = await dbManager.getTaskResult(taskId);
-  console.log(result)
   if (result) {
     res.send(result);
   } else {

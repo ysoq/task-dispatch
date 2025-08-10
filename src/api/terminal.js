@@ -72,7 +72,6 @@ router.post('/:taskId/task/result', (req, res) => {
     body += chunk;
   });
   req.on('end', () => {
-    console.log('接收到的文本数据:', body);
     const uploadResult = terminalManager.uploadTaskResult(req.params.taskId, body);
     res.json(uploadResult);
   });

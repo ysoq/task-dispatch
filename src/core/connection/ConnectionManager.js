@@ -76,7 +76,6 @@ class ConnectionManager {
   _handleMessage(ws, data) {
     try {
       const message = JSON.parse(data.toString());
-      console.log(message)
       switch (message.type) {
         case 'heartbeat':
           // 更新心跳时间
