@@ -52,7 +52,7 @@ app.use('/api/task', taskApi);
 
 // 首页路由
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
+  res.sendFile(__dirname + '/public/dashboard.html');
 });
 
 // 启动服务器

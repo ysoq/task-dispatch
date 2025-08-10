@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>终端任务调度系统 - 终端任务</title>
+  <!-- 引入Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- 引入Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // 配置Tailwind主题
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6', // 蓝色主色调
+            secondary: '#6B7280', // 次要色
+            success: '#10B981', // 成功色
+            warning: '#F59E0B', // 警告色
+            danger: '#EF4444', // 错误色
+            dark: '#1F2937', // 深色
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      .hover-scale {
+        transition: transform 0.2s ease;
+      }
+      .hover-scale:hover {
+        transform: scale(1.02);
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    }
+  </style>
+</head>
+<body class="font-inter bg-gray-50 min-h-screen">
+  <!-- 导航栏 -->
+  <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fas fa-terminal text-primary text-2xl"></i>
+        <h1 class="text-xl font-bold text-dark">终端任务调度系统</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <nav class="hidden md:flex space-x-6">
+          <a href="dashboard.html" class="text-secondary hover:text-primary transition-colors pb-1 border-b-2 border-transparent hover:border-primary/50">仪表盘</a>
+          <a href="terminal-tasks.html" class="text-primary font-medium border-b-2 border-primary pb-1">终端任务</a>
+        </nav>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <i class="fas fa-moon text-secondary"></i>
+        </button>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+            <i class="fas fa-search text-secondary"></i>
+          </span>
+          <input type="text" placeholder="搜索..." class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-48 lg:w-64 transition-all">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 pt-24 pb-12 max-w-7xl">
+    <!-- 任务下发区域 -->
+    <section class="bg-white rounded-xl p-6 card-shadow mb-8 animate-fade-in">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-dark"><i class="fas fa-tasks text-primary mr-2"></i> 任务下发</h2>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 终端列表 -->
+        <div class="lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-dark">终端列表</h3>
+            <button id="refreshTerminalsBtn" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors">
+              <i class="fas fa-sync-alt mr-2"></i> 刷新
+            </button>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-gray-200">
+            <table class="w-full text-left">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">选择</th>
+                  <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">终端ID</th>
+                  <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">类型</th>
+                  <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">状态</th>
+                  <th class="px-6 py-3 text-xs font-medium text-secondary uppercase tracking-wider">最后在线时间</th>
+                </tr>
+              </thead>
+              <tbody id="terminalTableBody" class="bg-white divide-y divide-gray-200">
+                <tr class="animate-pulse">
+                  <td colspan="5" class="px-6 py-4 text-center text-secondary">加载中...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 任务输入 -->
+        <div class="lg:col-span-1">
+          <div class="bg-gray-50 rounded-xl p-5">
+            <h3 class="text-lg font-semibold text-dark mb-4">任务信息</h3>
+
+            <div class="mb-4">
+              <label for="actionInput" class="block text-sm font-medium text-secondary mb-1">操作类型 (Action)</label>
+              <input type="text" id="actionInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" placeholder="输入操作类型" value="process">
+            </div>
+
+            <div class="mb-4">
+              <label for="dataInput" class="block text-sm font-medium text-secondary mb-1">任务数据 (Data)</label>
+              <textarea id="dataInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all h-32" placeholder="输入任务数据">示例任务数据</textarea>
+            </div>
+
+            <button id="submitTaskBtn" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+              <i class="fas fa-paper-plane mr-2"></i> 下发任务到指定终端
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 终端详情和任务历史 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
+          <h3 class="text-lg font-semibold text-dark flex items-center mb-4">
+            <i class="fas fa-terminal text-primary mr-2"></i> 当前选择的终端
+          </h3>
+          <div id="selectedTerminalInfo" class="text-sm text-dark">未选择终端</div>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+          <h3 class="text-lg font-semibold text-dark flex items-center mb-4">
+            <i class="fas fa-history text-secondary mr-2"></i> 终端最近任务
+          </h3>
+          <div id="terminalTaskHistory" class="text-sm text-dark">请选择终端查看任务历史</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 消息日志 -->
+    <section class="bg-white rounded-xl p-6 card-shadow animate-fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-dark"><i class="fas fa-history text-primary mr-2"></i> 任务日志</h2>
+        <div class="flex space-x-2">
+          <button id="clearLogBtn" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-dark rounded-lg flex items-center transition-colors text-sm">
+            <i class="fas fa-trash-alt mr-1"></i> 清空
+          </button>
+          <select id="logFilter" class="px-3 py-1.5 bg-gray-100 text-dark rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
+            <option value="all">全部</option>
+            <option value="success">成功</option>
+            <option value="error">错误</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="messages" class="h-80 overflow-y-auto bg-gray-50 rounded-lg p-4 text-sm space-y-2"></div>
+    </section>
+  </main>
+
+  <!-- 任务结果模态框 -->
+  <div class="modal fixed inset-0 z-50 hidden" id="taskResultModal" aria-labelledby="taskResultModalLabel" aria-hidden="true">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-auto overflow-hidden transform transition-all relative z-10 animate-fade-in">
+        <div class="flex items-center justify-between p-5 border-b border-gray-200">
+          <h5 class="text-lg font-bold text-dark" id="taskResultTitle">任务结果</h5>
+          <button type="button" class="text-secondary hover:text-dark" id="closeModalBtn">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-5 max-h-[70vh] overflow-y-auto">
+          <pre id="taskResultBody" class="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto"></pre>
+        </div>
+        <div class="p-5 border-t border-gray-200 flex justify-end">
+          <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-dark rounded-lg transition-colors" id="cancelModalBtn">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 任务成功提示Toast -->
+  <div class="fixed bottom-5 right-5 z-50 hidden" id="taskSuccessToast">
+    <div class="bg-success text-white rounded-lg shadow-lg p-4 max-w-xs flex items-start space-x-3 animate-fade-in">
+      <div class="bg-white/20 p-2 rounded-full">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm">任务成功</h4>
+        <p class="text-sm text-white/90" id="toastMessage">任务下发成功！</p>
+      </div>
+      <button type="button" class="ml-auto text-white/70 hover:text-white" id="closeToastBtn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // WebSocket连接
+    let socket;
+    const messagesDiv = document.getElementById('messages');
+    const taskResultModal = document.getElementById('taskResultModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+    const taskSuccessToast = document.getElementById('taskSuccessToast');
+    const closeToastBtn = document.getElementById('closeToastBtn');
+    const toastMessage = document.getElementById('toastMessage');
+    const clearLogBtn = document.getElementById('clearLogBtn');
+    const logFilter = document.getElementById('logFilter');
+    const themeToggle = document.getElementById('themeToggle');
+    let isDarkMode = false;
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 连接WebSocket
+      connectWebSocket();
+
+      // 刷新按钮点击事件
+      const refreshTerminalsBtn = document.getElementById('refreshTerminalsBtn');
+      if (refreshTerminalsBtn) {
+        refreshTerminalsBtn.addEventListener('click', function() {
+          addMessage('手动刷新终端列表...');
+          fetchTerminals();
+        });
+      }
+
+      // 清空日志按钮点击事件
+      if (clearLogBtn) {
+        clearLogBtn.addEventListener('click', function() {
+          messagesDiv.innerHTML = '';
+          addMessage('日志已清空');
+        });
+      }
+
+      // 关闭模态框按钮
+      if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', function() {
+          taskResultModal.classList.add('hidden');
+        });
+      }
+
+      if (cancelModalBtn) {
+        cancelModalBtn.addEventListener('click', function() {
+          taskResultModal.classList.add('hidden');
+        });
+      }
+
+      // 关闭提示框按钮
+      if (closeToastBtn) {
+        closeToastBtn.addEventListener('click', function() {
+          taskSuccessToast.classList.add('hidden');
+        });
+      }
+    });
+
+    // 连接WebSocket服务器
+    function connectWebSocket() {
+      // 关闭任何现有的连接
+      if (socket) {
+        socket.close();
+      }
+
+      // 创建新连接
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+      const wsUrl = wsProtocol + window.location.host + '/ws';
+      socket = new WebSocket(wsUrl);
+
+      // 连接打开时
+      socket.onopen = () => {
+        addMessage('WebSocket连接已建立');
+        // 连接成功后获取终端列表
+        fetchTerminals();
+      };
+
+      // 接收消息时
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleMessage(data);
+        } catch (error) {
+          addMessage('接收到无效消息: ' + event.data, 'error');
+        }
+      };
+
+      // 连接关闭时
+      socket.onclose = () => {
+        addMessage('WebSocket连接已关闭');
+
+        // 尝试重连
+        setTimeout(connectWebSocket, 3000);
+      };
+
+      // 连接出错时
+      socket.onerror = (error) => {
+        addMessage('WebSocket错误: ' + error, 'error');
+      };
+    }
+
+    // 获取终端列表
+    function fetchTerminals() {
+      addMessage('正在获取终端列表...');
+      fetch('/api/terminal')
+        .then(response => response.json())
+        .then(terminals => {
+          updateTerminalTable(terminals);
+          addMessage('终端列表获取成功');
+        })
+        .catch(error => {
+          addMessage('获取终端列表失败: ' + error, 'error');
+          console.error('获取终端列表失败:', error);
+        });
+    }
+
+    // 更新终端表格
+    function updateTerminalTable(terminals) {
+      const tableBody = document.getElementById('terminalTableBody');
+      tableBody.innerHTML = '';
+
+      if (terminals.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="5" class="px-6 py-4 text-center text-secondary">没有可用终端</td>';
+        tableBody.appendChild(row);
+        return;
+      }
+
+      terminals.forEach(terminal => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition-colors cursor-pointer';
+        row.addEventListener('click', function() {
+          // 移除所有行的选中状态
+          document.querySelectorAll('#terminalTableBody tr').forEach(r => {
+            r.classList.remove('bg-blue-50');
+          });
+          // 添加当前行的选中状态
+          this.classList.add('bg-blue-50');
+          // 更新选中终端信息
+          updateSelectedTerminalInfo(terminal);
+        });
+
+        let statusClass = '';
+        let statusText = '';
+
+        switch (terminal.status) {
+          case 'online':
+            statusClass = 'bg-green-100 text-green-800';
+            statusText = '在线';
+            break;
+          case 'offline':
+            statusClass = 'bg-red-100 text-red-800';
+            statusText = '离线';
+            break;
+          case 'busy':
+            statusClass = 'bg-yellow-100 text-yellow-800';
+            statusText = '忙碌';
+            break;
+          default:
+            statusClass = 'bg-gray-100 text-gray-800';
+            statusText = '未知';
+        }
+
+        // 处理日期显示
+        let lastActiveAt = 'Invalid Date';
+        if (terminal.lastActiveAt) {
+          const date = new Date(terminal.lastActiveAt);
+          if (!isNaN(date.getTime())) {
+            lastActiveAt = date.toLocaleString();
+          }
+        }
+
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <input type="radio" name="terminalSelect" class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary terminal-radio" value="${terminal.id}">
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap font-medium text-dark">${terminal.id}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-secondary">${terminal.type}</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${statusText}</span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-secondary">${lastActiveAt}</td>
+        `;
+
+        tableBody.appendChild(row);
+      });
+    }
+
+    // 格式化日期
+    function formatDate(dateString) {
+      if (!dateString) return '无数据';
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? '无效日期' : date.toLocaleString();
+    }
+
+    // 更新选中终端信息
+    function updateSelectedTerminalInfo(terminal) {
+      const selectedTerminalInfo = document.getElementById('selectedTerminalInfo');
+      selectedTerminalInfo.innerHTML = `
+        <div class="mb-2"><span class="font-medium">终端ID:</span> ${terminal.id}</div>
+        <div class="mb-2"><span class="font-medium">类型:</span> ${terminal.type}</div>
+        <div class="mb-2"><span class="font-medium">状态:</span> 
+          <span class="px-2 py-0.5 text-xs rounded-full 
+            ${terminal.status === 'online' ? 'bg-green-100 text-green-800' : 
+              terminal.status === 'offline' ? 'bg-red-100 text-red-800' : 
+              terminal.status === 'busy' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${
+              terminal.status === 'online' ? '在线' : 
+              terminal.status === 'offline' ? '离线' : 
+              terminal.status === 'busy' ? '忙碌' : '未知'
+            }</span>
+        </div>
+        <div><span class="font-medium">最后在线时间:</span> ${formatDate(terminal.lastActiveAt)}</div>
+      `;
+
+      // 更新终端任务历史
+      updateTerminalTaskHistory(terminal.id);
+    }
+
+    // 更新终端任务历史
+    function updateTerminalTaskHistory(terminalId) {
+      const terminalTaskHistory = document.getElementById('terminalTaskHistory');
+      // 这里应该调用API获取任务历史，暂时用模拟数据
+      terminalTaskHistory.innerHTML = `
+        <div class="space-y-3">
+          <div class="p-2 bg-gray-100 rounded">
+            <div class="flex justify-between"><span class="font-medium">任务ID: T1001</span><span class="text-xs text-secondary">2023-06-15 14:30</span></div>
+            <div class="text-sm mt-1">状态: <span class="text-green-600">已完成</span></div>
+          </div>
+          <div class="p-2 bg-gray-100 rounded">
+            <div class="flex justify-between"><span class="font-medium">任务ID: T0987</span><span class="text-xs text-secondary">2023-06-15 13:45</span></div>
+            <div class="text-sm mt-1">状态: <span class="text-green-600">已完成</span></div>
+          </div>
+          <div class="p-2 bg-gray-100 rounded">
+            <div class="flex justify-between"><span class="font-medium">任务ID: T0952</span><span class="text-xs text-secondary">2023-06-15 10:15</span></div>
+            <div class="text-sm mt-1">状态: <span class="text-yellow-600">失败</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 处理接收到的消息
+    function handleMessage(data) {
+      switch (data.type) {
+        case 'welcome':
+          addMessage('服务器: ' + data.message, 'success');
+          break;
+        case 'task_assigned':
+          addMessage(`任务已分配到终端 ${data.terminalId}: ${data.taskId}`, 'success');
+          break;
+        case 'task_completed':
+          addMessage(`终端 ${data.terminalId} 的任务 ${data.taskId} 已完成`, 'success');
+          // 任务完成后刷新终端列表
+          fetchTerminals();
+          break;
+        case 'error':
+          addMessage('错误: ' + data.message, 'error');
+          break;
+        case 'terminal_status_changed':
+          addMessage(`终端 ${data.terminalId} 状态变更为 ${data.status}`, 'success');
+          // 终端状态变更后刷新终端列表
+          fetchTerminals();
+          break;
+        default:
+          addMessage('未知消息类型: ' + JSON.stringify(data));
+      }
+    }
+
+    // 添加消息到日志
+    function addMessage(text, type = '') {
+      const messageDiv = document.createElement('div');
+      let iconClass = '';
+      let bgClass = '';
+
+      if (type === 'success') {
+        iconClass = 'fas fa-check-circle text-success';
+        bgClass = 'bg-green-50 border-green-100';
+      } else if (type === 'error') {
+        iconClass = 'fas fa-exclamation-circle text-danger';
+        bgClass = 'bg-red-50 border-red-100';
+      } else {
+        iconClass = 'fas fa-info-circle text-primary';
+        bgClass = 'bg-blue-50 border-blue-100';
+      }
+
+      messageDiv.className = `p-3 rounded-lg border ${bgClass} flex items-start space-x-3 animate-fade-in`;
+      messageDiv.innerHTML = `
+        <i class="${iconClass}"></i>
+        <div>
+          <div class="font-medium ${isDarkMode ? 'text-white' : 'text-dark'}">${new Date().toLocaleTimeString()}</div>
+          <div>${text}</div>
+        </div>
+      `;
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  </script>
+</body>
+</html>

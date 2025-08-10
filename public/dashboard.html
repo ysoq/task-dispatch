@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>终端任务调度系统 - 仪表盘</title>
+  <!-- 引入Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- 引入Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // 配置Tailwind主题
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6', // 蓝色主色调
+            secondary: '#6B7280', // 次要色
+            success: '#10B981', // 成功色
+            warning: '#F59E0B', // 警告色
+            danger: '#EF4444', // 错误色
+            dark: '#1F2937', // 深色
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      .hover-scale {
+        transition: transform 0.2s ease;
+      }
+      .hover-scale:hover {
+        transform: scale(1.02);
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    }
+  </style>
+</head>
+<body class="font-inter bg-gray-50 min-h-screen">
+  <!-- 导航栏 -->
+  <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fas fa-terminal text-primary text-2xl"></i>
+        <h1 class="text-xl font-bold text-dark">终端任务调度系统</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <nav class="hidden md:flex space-x-6">
+          <a href="dashboard.html" class="text-primary font-medium border-b-2 border-primary pb-1">仪表盘</a>
+          <a href="terminal-tasks.html" class="text-secondary hover:text-primary transition-colors pb-1 border-b-2 border-transparent hover:border-primary/50">终端任务</a>
+        </nav>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <i class="fas fa-moon text-secondary"></i>
+        </button>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+            <i class="fas fa-search text-secondary"></i>
+          </span>
+          <input type="text" placeholder="搜索..." class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-48 lg:w-64 transition-all">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 pt-24 pb-12 max-w-7xl">
+    <!-- 状态概览卡片 -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-fade-in">
+      <div class="bg-white rounded-xl p-5 card-shadow hover-scale">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-secondary font-medium">总终端数</h3>
+          <div class="bg-primary/10 p-2 rounded-lg">
+            <i class="fas fa-desktop text-primary"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-bold text-dark" id="totalTerminals">0</p>
+        <p class="text-xs text-secondary mt-1"><i class="fas fa-arrow-up text-success"></i> 较昨日 +5%</p>
+      </div>
+
+      <div class="bg-white rounded-xl p-5 card-shadow hover-scale">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-secondary font-medium">在线终端</h3>
+          <div class="bg-success/10 p-2 rounded-lg">
+            <i class="fas fa-check-circle text-success"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-bold text-dark" id="onlineTerminals">0</p>
+        <p class="text-xs text-secondary mt-1"><span id="onlinePercentage">0</span>% 可用率</p>
+      </div>
+
+      <div class="bg-white rounded-xl p-5 card-shadow hover-scale">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-secondary font-medium">运行中任务</h3>
+          <div class="bg-warning/10 p-2 rounded-lg">
+            <i class="fas fa-sync-alt text-warning"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-bold text-dark" id="activeTasks">0</p>
+        <p class="text-xs text-secondary mt-1"><i class="fas fa-arrow-up text-danger"></i> 较昨日 +12%</p>
+      </div>
+
+      <div class="bg-white rounded-xl p-5 card-shadow hover-scale">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-secondary font-medium">今日完成任务</h3>
+          <div class="bg-success/10 p-2 rounded-lg">
+            <i class="fas fa-clipboard-check text-success"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-bold text-dark" id="completedTasks">0</p>
+        <p class="text-xs text-secondary mt-1"><i class="fas fa-arrow-up text-success"></i> 较昨日 +8%</p>
+      </div>
+    </section>
+
+    <!-- 数据可视化 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 animate-fade-in">
+      <div class="bg-white rounded-xl p-5 card-shadow lg:col-span-2">
+        <h3 class="text-lg font-semibold text-dark mb-4">任务完成趋势</h3>
+        <div class="h-64">
+          <canvas id="taskChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-5 card-shadow">
+        <h3 class="text-lg font-semibold text-dark mb-4">终端类型分布</h3>
+        <div class="h-64 flex justify-center items-center">
+          <canvas id="terminalChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 任务成功提示Toast -->
+  <div class="fixed bottom-5 right-5 z-50 hidden" id="taskSuccessToast">
+    <div class="bg-success text-white rounded-lg shadow-lg p-4 max-w-xs flex items-start space-x-3 animate-fade-in">
+      <div class="bg-white/20 p-2 rounded-full">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm">任务成功</h4>
+        <p class="text-sm text-white/90" id="toastMessage">任务下发成功！</p>
+      </div>
+      <button type="button" class="ml-auto text-white/70 hover:text-white" id="closeToastBtn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const messagesDiv = document.getElementById('messages');
+    const taskSuccessToast = document.getElementById('taskSuccessToast');
+    const closeToastBtn = document.getElementById('closeToastBtn');
+    const toastMessage = document.getElementById('toastMessage');
+    const clearLogBtn = document.getElementById('clearLogBtn');
+    const logFilter = document.getElementById('logFilter');
+    const themeToggle = document.getElementById('themeToggle');
+    let isDarkMode = false;
+
+    // 初始化图表
+    function initCharts() {
+      // 任务完成趋势图
+      const taskCtx = document.getElementById('taskChart').getContext('2d');
+      const taskChart = new Chart(taskCtx, {
+        type: 'line',
+        data: {
+          labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+          datasets: [{
+            label: '完成任务数',
+            data: [12, 19, 15, 22, 18, 25, 28],
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.3,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
+      // 终端类型分布图
+      const terminalCtx = document.getElementById('terminalChart').getContext('2d');
+      const terminalChart = new Chart(terminalCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Web终端', 'Node终端', 'Python终端', '其他'],
+          datasets: [{
+            data: [45, 30, 15, 10],
+            backgroundColor: [
+              '#3B82F6',
+              '#10B981',
+              '#F59E0B',
+              '#6B7280'
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          },
+          cutout: '70%'
+        }
+      });
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化图表
+      initCharts();
+    });
+
+  </script>
+</body>
+</html>
