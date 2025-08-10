@@ -66,8 +66,17 @@ router.post('/next/task', (req, res) => {
  * @access Public
  */
 router.post('/:taskId/task/result', (req, res) => {
-  const uploadResult = terminalManager.uploadTaskResult(req.params.id, taskId, req.body);
-  res.json(uploadResult);
+  let body = '';
+  req.setEncoding('utf8');
+  req.on('data', (chunk) => {
+    body += chunk;
+  });
+  req.on('end', () => {
+    console.log('接收到的文本数据:', body);
+    const uploadResult = terminalManager.uploadTaskResult(req.params.taskId, body);
+    res.json(uploadResult);
+  });
+
 });
 
 /**

@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- 引入Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs"></script>
   <script>
     // 配置Tailwind主题
     tailwind.config = {
@@ -130,17 +131,25 @@
             <h3 class="text-lg font-semibold text-dark mb-4">任务信息</h3>
 
             <div class="mb-4">
+              <label for="taskTemplateSelect" class="block text-sm font-medium text-secondary mb-1">选择任务模板</label>
+              <select id="taskTemplateSelect"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all mb-2">
+                <option value="">-- 选择预设任务 --</option>
+              </select>
+            </div>
+
+            <div class="mb-4">
               <label for="actionInput" class="block text-sm font-medium text-secondary mb-1">操作类型 (Action)</label>
-              <input type="text" id="actionInput"
+              <input type="text" id="actionInput" 
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                placeholder="输入操作类型" value="process">
+                placeholder="输入操作类型" value="">
             </div>
 
             <div class="mb-4">
               <label for="dataInput" class="block text-sm font-medium text-secondary mb-1">任务数据 (Data)</label>
               <textarea id="dataInput"
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all h-32"
-                placeholder="输入任务数据">示例任务数据</textarea>
+                placeholder="输入任务数据"></textarea>
             </div>
 
             <button id="submitTaskBtn"
@@ -197,7 +206,7 @@
     <div class="flex items-center justify-center min-h-screen px-4">
       <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
       <div
-        class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-auto overflow-hidden transform transition-all relative z-10 animate-fade-in">
+        class="bg-white rounded-xl shadow-xl w-90% mx-auto overflow-hidden transform transition-all relative z-10 animate-fade-in">
         <div class="flex items-center justify-between p-5 border-b border-gray-200">
           <h5 class="text-lg font-bold text-dark" id="taskResultTitle">任务结果</h5>
           <button type="button" class="text-secondary hover:text-dark" id="closeModalBtn">
@@ -246,6 +255,9 @@
     const themeToggle = document.getElementById('themeToggle');
     let isDarkMode = false;
 
+    // 存储当前选中的终端ID
+    let selectedTerminalId = null;
+
     // 页面加载完成后初始化
     document.addEventListener('DOMContentLoaded', function () {
       // 连接WebSocket
@@ -285,6 +297,66 @@
       if (closeToastBtn) {
         closeToastBtn.addEventListener('click', function () {
           taskSuccessToast.classList.add('hidden');
+        });
+      }
+
+      // 任务提交按钮点击事件
+      const submitTaskBtn = document.getElementById('submitTaskBtn');
+      if (submitTaskBtn) {
+        submitTaskBtn.addEventListener('click', function () {
+          if (!selectedTerminalId) {
+            addMessage('请先选择一个终端', 'error');
+            return;
+          }
+
+          const action = document.getElementById('actionInput').value.trim();
+          const data = document.getElementById('dataInput').value.trim();
+
+          if (!action) {
+            addMessage('请输入操作类型', 'error');
+            return;
+          }
+
+          if (!data) {
+            addMessage('请输入任务数据', 'error');
+            return;
+          }
+
+          // 构建任务数据
+          const taskData = {
+            action: action,
+            data: data
+          };
+
+          addMessage(`正在向终端 ${selectedTerminalId} 下发任务...`);
+
+          // 发送POST请求到submit接口
+          fetch(`/api/task/submit?terminalId=${encodeURIComponent(selectedTerminalId)}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(taskData)
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('任务提交失败');
+            }
+            return response.json();
+          })
+          .then(result => {
+            addMessage(`任务提交成功，任务ID: ${result.taskId}`, 'success');
+            // 显示成功提示
+            toastMessage.textContent = `任务已成功下发到终端 ${selectedTerminalId}`;
+            taskSuccessToast.classList.remove('hidden');
+            // 3秒后自动隐藏提示
+            setTimeout(() => {
+              taskSuccessToast.classList.add('hidden');
+            }, 3000);
+          })
+          .catch(error => {
+            addMessage(`任务提交失败: ${error.message}`, 'error');
+          });
         });
       }
     });
@@ -426,6 +498,9 @@
     // 更新选中终端信息
     function updateSelectedTerminalInfo(terminal) {
       console.log(terminal)
+      // 更新选中的终端ID
+      selectedTerminalId = terminal.id;
+      
       const selectedTerminalInfo = document.getElementById('selectedTerminalInfo');
       var html= `
         <div class="mb-2"><span class="font-medium">终端ID:</span> ${terminal.id}</div>
@@ -484,6 +559,10 @@
                 statusClass = 'text-yellow-600';
                 statusText = '失败';
                 break;
+              case 'pending':
+                statusClass = 'text-blue-600';
+                statusText = '待处理';
+                break;
               default:
                 statusClass = 'text-gray-600';
             }
@@ -508,7 +587,7 @@
     }
 
     function showTaskResult(taskId) {
-      fetch(`/api/terminal/task/${taskId}/result`)
+      fetch(`/api/task/result/${taskId}`)
         .then(response => {
           if (!response.ok) {
             throw new Error('获取任务结果失败');
@@ -521,8 +600,8 @@
           
           // 设置模态框标题
           taskResultTitle.textContent = '任务结果';
-          // 设置模态框内容
-          taskResultBody.textContent = data;
+          // 设置模态框内容，将 \r\n 替换为换行符以实现换行显示
+          taskResultBody.textContent = data?.replace(/\\r\\n/g, '\n');
           // 显示模态框
           taskResultModal.classList.remove('hidden');
         })
@@ -586,6 +665,40 @@
       messagesDiv.appendChild(messageDiv);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
+
+    var fastTaskData = [
+      {action: 'log', data: dayjs().format('YYYY-MM-DD'), label: '获取今天日志'},
+      {action: 'log', data: dayjs().subtract(1, 'day').format('YYYY-MM-DD'), label: '获取昨天日志'},
+      {action: 'config', data: "", label: '查询终端配置'},
+    ]
+
+    // 初始化任务模板选择框
+    document.addEventListener('DOMContentLoaded', function() {
+      const taskTemplateSelect = document.getElementById('taskTemplateSelect');
+      const actionInput = document.getElementById('actionInput');
+      const dataInput = document.getElementById('dataInput');
+
+      // 填充选择框选项
+      fastTaskData.forEach((task, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = task.label;
+        taskTemplateSelect.appendChild(option);
+      });
+
+      // 添加选择事件监听器
+      taskTemplateSelect.addEventListener('change', function() {
+        const selectedIndex = this.value;
+        if (selectedIndex !== '') {
+          const selectedTask = fastTaskData[selectedIndex];
+          actionInput.value = selectedTask.action;
+          dataInput.value = selectedTask.data;
+        } else {
+          actionInput.value = '';
+          dataInput.value = '';
+        }
+      });
+    });
   </script>
 </body>
 

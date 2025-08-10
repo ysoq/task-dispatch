@@ -3,6 +3,7 @@ const router = express.Router();
 const taskManager = require('../core/task/TaskManager');
 const taskScheduler = require('../core/task/TaskScheduler');
 const terminalManager = require('../core/terminal/TerminalManager');
+const dbManager = require('../utils/dbManager');
 
 /**
  * @route POST /api/task/submit
@@ -69,16 +70,12 @@ router.get('/status/:id', (req, res) => {
  * @desc 获取任务结果
  * @access Public
  */
-router.get('/result/:id', (req, res) => {
+router.get('/result/:id', async (req, res) => {
   const taskId = req.params.id;
-  const task = taskManager.getTask(taskId);
-
-  if (task && task.result) {
-    res.json({
-      taskId: task.taskId,
-      result: task.result,
-      completedAt: task.completedAt
-    });
+  const result = await dbManager.getTaskResult(taskId);
+  console.log(result)
+  if (result) {
+    res.send(result);
   } else {
     res.status(404).json({ success: false, message: '任务不存在或结果未生成' });
   }

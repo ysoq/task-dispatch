@@ -124,15 +124,6 @@ class TerminalManager {
    */
   assignTaskToTerminal(terminalId, task) {
     try {
-      // 检查终端是否存在且在线
-      const terminal = dbManager.getTerminal(terminalId);
-      if (!terminal) {
-        return { success: false, message: '终端不存在' };
-      }
-
-      if (terminal.status !== 'online') {
-        return { success: false, message: '终端不在线' };
-      }
 
       // 准备任务数据
       const taskToCreate = {
@@ -148,9 +139,6 @@ class TerminalManager {
       if (!createResult) {
         return { success: false, message: '任务创建失败' };
       }
-
-      // 更新终端状态为忙碌
-      dbManager.updateTerminalStatus(terminalId, 'busy');
 
       console.log(`任务 ${task.taskId} 已分配给终端 ${terminalId}`);
       return { success: true, message: '任务分配成功' };
@@ -172,7 +160,11 @@ class TerminalManager {
       if (!tasks || tasks.length === 0) {
         return null;
       }
-      return task[0].task_data;
+      const task = tasks[0].task_data
+      return {
+        taskId: task.taskId,
+        ...task.taskData,
+      };
     } catch (error) {
       console.error(`获取终端 ${terminalId} 任务失败:`, error);
       return null;

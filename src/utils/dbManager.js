@@ -329,17 +329,10 @@ class DBManager {
    * @param {string} taskId - 任务ID
    * @returns {Object|null} - 结果信息
    */
-  getTaskResult(taskId) {
+  async getTaskResult(taskId) {
     try {
-      const row = this.db.prepare('SELECT * FROM task_results WHERE task_id = ?').get(taskId);
-      if (!row) return null;
-
-      // 解析JSON字段
-      if (row.result_data) {
-        row.result_data = JSON.parse(row.result_data);
-      }
-
-      return row;
+      const row = await this.db.prepare('SELECT result_data FROM task_results WHERE task_id = ?').get(taskId);
+      return row?.result_data ?? "还没有上传结果";
     } catch (error) {
       console.error(`获取任务结果失败 (${taskId}):`, error);
       return null;
