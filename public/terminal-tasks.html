@@ -140,7 +140,7 @@
 
             <div class="mb-4">
               <label for="actionInput" class="block text-sm font-medium text-secondary mb-1">操作类型 (Action)</label>
-              <input type="text" id="actionInput" 
+              <input type="text" id="actionInput"
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 placeholder="输入操作类型" value="">
             </div>
@@ -179,7 +179,7 @@
     </section>
 
     <!-- 消息日志 -->
-    <section class="bg-white rounded-xl p-6 card-shadow animate-fade-in">
+    <section class="bg-white rounded-xl p-6 card-shadow animate-fade-in hidden">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-dark"><i class="fas fa-history text-primary mr-2"></i> 任务日志</h2>
         <div class="flex space-x-2">
@@ -218,11 +218,13 @@
         </div>
         <div class="p-5 border-t border-gray-200">
           <div class="flex items-center mb-4">
-            <input type="checkbox" id="autoWrapCheckbox" class="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+            <input type="checkbox" id="autoWrapCheckbox"
+              class="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
             <label for="autoWrapCheckbox" class="text-sm text-secondary">自动换行显示</label>
           </div>
           <div class="flex justify-end space-x-3">
-            <button type="button" class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+            <button type="button"
+              class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
               id="downloadResultBtn">
               <i class="fas fa-download mr-2"></i>下载结果
             </button>
@@ -271,7 +273,8 @@
     // 页面加载完成后初始化
     document.addEventListener('DOMContentLoaded', function () {
       // 连接WebSocket
-      connectWebSocket();
+      //connectWebSocket();
+      fetchTerminals();
 
       // 刷新按钮点击事件
       const refreshTerminalsBtn = document.getElementById('refreshTerminalsBtn');
@@ -348,25 +351,25 @@
             },
             body: JSON.stringify(taskData)
           })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('任务提交失败');
-            }
-            return response.json();
-          })
-          .then(result => {
-            addMessage(`任务提交成功，任务ID: ${result.taskId}`, 'success');
-            // 显示成功提示
-            toastMessage.textContent = `任务已成功下发到终端 ${selectedTerminalId}`;
-            taskSuccessToast.classList.remove('hidden');
-            // 3秒后自动隐藏提示
-            setTimeout(() => {
-              taskSuccessToast.classList.add('hidden');
-            }, 3000);
-          })
-          .catch(error => {
-            addMessage(`任务提交失败: ${error.message}`, 'error');
-          });
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('任务提交失败');
+              }
+              return response.json();
+            })
+            .then(result => {
+              addMessage(`任务提交成功，任务ID: ${result.taskId}`, 'success');
+              // 显示成功提示
+              toastMessage.textContent = `任务已成功下发到终端 ${selectedTerminalId}`;
+              taskSuccessToast.classList.remove('hidden');
+              // 3秒后自动隐藏提示
+              setTimeout(() => {
+                taskSuccessToast.classList.add('hidden');
+              }, 3000);
+            })
+            .catch(error => {
+              addMessage(`任务提交失败: ${error.message}`, 'error');
+            });
         });
       }
     });
@@ -386,8 +389,6 @@
       // 连接打开时
       socket.onopen = () => {
         addMessage('WebSocket连接已建立');
-        // 连接成功后获取终端列表
-        fetchTerminals();
       };
 
       // 接收消息时
@@ -431,10 +432,10 @@
     }
 
     // 初始化搜索框事件
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const terminalSearchInput = document.getElementById('terminalSearchInput');
       if (terminalSearchInput) {
-        terminalSearchInput.addEventListener('input', function() {
+        terminalSearchInput.addEventListener('input', function () {
           const searchQuery = this.value.trim();
           // 延迟搜索，避免频繁请求
           clearTimeout(this.searchTimeout);
@@ -510,9 +511,9 @@
       console.log(terminal)
       // 更新选中的终端ID
       selectedTerminalId = terminal.id;
-      
+
       const selectedTerminalInfo = document.getElementById('selectedTerminalInfo');
-      var html= `
+      var html = `
         <div class="mb-2"><span class="font-medium">终端ID:</span> ${terminal.id}</div>
         <div class="mb-2"><span class="font-medium">类型:</span> ${terminal.type}</div>
         <div class="mb-2"><span class="font-medium">状态:</span> 
@@ -520,15 +521,15 @@
             ${terminal.status === 'online' ? 'bg-green-100 text-green-800' :
           terminal.status === 'offline' ? 'bg-red-100 text-red-800' :
             terminal.status === 'busy' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${terminal.status === 'online' ? '在线' :
-          terminal.status === 'offline' ? '离线' :
-            terminal.status === 'busy' ? '忙碌' : '未知'
+              terminal.status === 'offline' ? '离线' :
+                terminal.status === 'busy' ? '忙碌' : '未知'
         }</span>
         </div>
         <div class="mb-2"><span class="font-medium">最后在线时间:</span> ${formatDate(terminal.last_active_at)}</div>
        
       `;
-      if(terminal.metadata) {
-        for(let key in terminal.metadata) {
+      if (terminal.metadata) {
+        for (let key in terminal.metadata) {
           html += `<div class="mb-2"><span class="font-medium">${key}:</span> ${terminal.metadata[key]}</div>`
         }
       }
@@ -555,11 +556,11 @@
             terminalTaskHistory.innerHTML = '<div class="text-center text-secondary">没有任务历史记录</div>';
             return;
           }
-          
+
           const html = data.map(task => {
             let statusClass = '';
             let statusText = task.status;
-            
+
             switch (task.status) {
               case 'completed':
                 statusClass = 'text-green-600';
@@ -576,7 +577,7 @@
               default:
                 statusClass = 'text-gray-600';
             }
-            
+
             return `
               <div class="p-2 bg-gray-100 rounded">
                 <div class="flex justify-between"><span class="font-medium">任务ID: ${task.taskId}</span><span class="text-xs text-secondary">${formatDate(task.completedAt)}</span></div>
@@ -587,7 +588,7 @@
               </div>
             `;
           }).join('');
-          
+
           terminalTaskHistory.innerHTML = `<div class="space-y-3">${html}</div>`;
         })
         .catch(error => {
@@ -607,7 +608,7 @@
         .then(data => {
           const taskResultTitle = document.getElementById('taskResultTitle');
           const taskResultBody = document.getElementById('taskResultBody');
-          
+
           // 设置模态框标题
           taskResultTitle.textContent = '任务结果';
           // 保存原始数据用于下载
@@ -662,7 +663,7 @@
     }
 
     // 初始化自动换行和下载按钮事件
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // 自动换行复选框事件
       const autoWrapCheckbox = document.getElementById('autoWrapCheckbox');
       if (autoWrapCheckbox) {
@@ -735,13 +736,13 @@
     }
 
     var fastTaskData = [
-      {action: 'log', data: dayjs().format('YYYY-MM-DD'), label: '获取今天日志'},
-      {action: 'log', data: dayjs().subtract(1, 'day').format('YYYY-MM-DD'), label: '获取昨天日志'},
-      {action: 'config', data: "", label: '查询终端配置'},
+      { action: 'log', data: dayjs().format('YYYY-MM-DD'), label: '获取今天日志' },
+      { action: 'log', data: dayjs().subtract(1, 'day').format('YYYY-MM-DD'), label: '获取昨天日志' },
+      { action: 'config', data: "config", label: '查询终端配置' },
     ]
 
     // 初始化任务模板选择框
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const taskTemplateSelect = document.getElementById('taskTemplateSelect');
       const actionInput = document.getElementById('actionInput');
       const dataInput = document.getElementById('dataInput');
@@ -755,7 +756,7 @@
       });
 
       // 添加选择事件监听器
-      taskTemplateSelect.addEventListener('change', function() {
+      taskTemplateSelect.addEventListener('change', function () {
         const selectedIndex = this.value;
         if (selectedIndex !== '') {
           const selectedTask = fastTaskData[selectedIndex];
